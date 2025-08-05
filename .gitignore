@@ -1,0 +1,62 @@
+# Python字节码文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.env
+.venv
+
+# 分发/打包
+dist/
+build/
+*.egg-info/
+*.egg
+
+# 单元测试/覆盖率报告
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# IDE相关
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 日志
+*.log
+logs/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 临时文件
+*.tmp
+*.bak
+tmp/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 本地配置
+local_settings.py
+db.sqlite3
