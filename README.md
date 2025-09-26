@@ -20,11 +20,11 @@
 
 - requests
 
-- [`beautifulsoup4`](https://beautifulsoup.cn):爬虫
+- [`beautifulsoup4`](https://beautifulsoup.cn) : 爬虫
   - [林粒粒讲Python](https://www.bilibili.com/video/BV1EHdUYEEEj)
 
 - [`selenium`](https://www.selenium.dev/zh-cn/): 
-  - [2025最新Selenium教程(Python 网页自动化测试脚本)](https://www.bilibili.com/video/BV1Y9UPYAEqN):相关教程;
+  - [2025最新Selenium教程(Python 网页自动化测试脚本)](https://www.bilibili.com/video/BV1Y9UPYAEqN) : 相关教程;
 
 ## 安装步骤
 
