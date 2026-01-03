@@ -2,19 +2,6 @@
 
 这是一个用于自动下载指定 GitHub 用户仓库代码的工具，通过 Selenium 模拟浏览器操作，实现批量下载仓库的 ZIP 压缩包。
 
-## 功能说明
-
-- 自动获取目标 GitHub 用户的仓库总数
-
-- 分页遍历用户的所有仓库
-
-- 自动点击进入仓库、打开下载菜单并下载 ZIP 包
-
-- 支持 Chrome 和 Edge 两种浏览器
-
-- [`selenium`](https://www.selenium.dev/zh-cn/):
-  - [2025最新Selenium教程(Python 网页自动化测试脚本)](https://www.bilibili.com/video/BV1Y9UPYAEqN) : 相关教程;
-
 ## 安装步骤
 
 1. 安装依赖库：
