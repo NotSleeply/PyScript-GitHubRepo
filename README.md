@@ -42,18 +42,6 @@ pip install -r requirements.txt
 
 - 将下载的驱动放在项目根目录的 drivers 文件夹下
 
-## 配置说明
-
-可在代码中修改以下配置参数：
-
-``` python
-url = "https://github.com/codewithsadee?page=1&tab=repositories"  # 目标GitHub用户仓库页面
-waitTime = 2  # 普通操作等待时间(秒)
-waitDownTime = 30  # 下载等待时间(秒)
-positionX = 250  # 浏览器窗口X坐标
-positionY = 0  # 浏览器窗口Y坐标
-```
-
 ## 使用方法
 
 1. 修改 url 为目标 GitHub 用户的仓库页面地址

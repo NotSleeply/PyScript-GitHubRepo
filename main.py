@@ -8,11 +8,11 @@ from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.edge.options import Options as EdgeOptions
 from selenium.webdriver.common.by import By
 
-url = "https://github.com/codewithsadee?page=1&tab=repositories"
-waitTime = 2
-waitDownTime = 30
-positionX = 250
-positionY = 0
+url = "https://github.com/codewithsadee?page=1&tab=repositories"  # 目标GitHub用户仓库页面
+waitTime = 2  # 普通操作等待时间(秒)
+waitDownTime = 30  # 下载等待时间(秒)
+positionX = 250  # 浏览器窗口X坐标
+positionY = 0  # 浏览器窗口Y坐标
 
 # 定义请求头
 headers = {
