@@ -37,14 +37,14 @@ def open_driver(driver):
 # 设置 edge
 def open_edge():
     option = open_option(EdgeOptions())
-    driver_Edge = webdriver.Edge(service=EdgeService('./drivers/msedgedriver.exe'), options=option)
+    driver_Edge = webdriver.Edge(options=option)  # Selenium Manager will auto-download correct driver
     driver= open_driver(driver_Edge)
     return driver
 
 # 设置 chrome
 def open_chrome():
     option = open_option(ChromeOptions())
-    driver_Chrome = webdriver.Chrome(service=ChromeService('./drivers/chromedriver.exe'), options=option)
+    driver_Chrome = webdriver.Chrome(options=option)  # Selenium Manager will auto-download correct driver
     driver= open_driver(driver_Chrome)
     return driver
 
@@ -99,10 +99,8 @@ def get_repo_count():
         return 0
 
 if __name__ == "__main__":
-    # driver = open_chrome()
-    # download_github_repo(driver)
-    #
-    # time.sleep(300)
-    # driver.quit()
-    for p in range(1, int(-(-143 // 30))):
-        print(p)
+    driver = open_chrome()
+    download_github_repo(driver)
+    
+    time.sleep(300)
+    driver.quit()

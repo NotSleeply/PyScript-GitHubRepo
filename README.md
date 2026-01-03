@@ -12,18 +12,7 @@
 
 - 支持 Chrome 和 Edge 两种浏览器
 
-## 环境依赖
-
-- Python 3.x
-
-- 所需 Python 库：
-
-- requests
-
-- [`beautifulsoup4`](https://beautifulsoup.cn) : 爬虫
-  - [林粒粒讲Python](https://www.bilibili.com/video/BV1EHdUYEEEj)
-
-- [`selenium`](https://www.selenium.dev/zh-cn/): 
+- [`selenium`](https://www.selenium.dev/zh-cn/):
   - [2025最新Selenium教程(Python 网页自动化测试脚本)](https://www.bilibili.com/video/BV1Y9UPYAEqN) : 相关教程;
 
 ## 安装步骤
@@ -36,31 +25,9 @@ pip install -r requirements.txt
 
 1. 下载对应浏览器的驱动：
 
-- Chrome 驱动：[chro](https://sites.google.com/chromium.org/driver/)[medri](https://sites.google.com/chromium.org/driver/)[ver](https://sites.google.com/chromium.org/driver/)
+- Chrome 驱动：[chromedriver](https://googlechromelabs.github.io/chrome-for-testing/)
 
-- Edge 驱动：[msed](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/)[gedri](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/)[ver](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/)
-
-- 将下载的驱动放在项目根目录的 drivers 文件夹下
-
-## 使用方法
-
-1. 修改 url 为目标 GitHub 用户的仓库页面地址
-
-1. 选择要使用的浏览器（Chrome 或 Edge）
-
-1. 运行主程序：
-
-``` shell
-make run
-```
-
-## 注意事项
-
-- 下载速度取决于网络状况和仓库大小，请根据实际情况调整 waitDownTime
-
-- 程序会自动处理分页，无需手动干预
-
-- 若遇到元素定位失败的问题，可能是 GitHub 页面结构更新导致，需相应调整 XPath 表达式
+- Edge 驱动：[msedgedriver](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/?form=MA13LH#downloads)
 
 ## 免责声明
 
