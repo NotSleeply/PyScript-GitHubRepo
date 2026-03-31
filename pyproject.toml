@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyscript-githubrepo"
+version = "0.1.0"
+description = "GitHub 仓库自动下载工具"
+authors = [{ name = "NotSleeply" }]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "selenium>=4.1.0",
+  "requests>=2.27.1",
+  "beautifulsoup4>=4.10.0",
+  "lxml>=4.8.0",
+  "uv>=0.5.0",
+]
+
+[project.scripts]
+pyscript-githubrepo = "main:run"

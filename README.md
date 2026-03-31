@@ -10,6 +10,17 @@
 pip install -r requirements.txt
 ```
 
+1. 安装 `uv` 来管理项目（可选但推荐）：
+
+``` powershell
+pip install uv
+```
+
+1. 目录结构：
+
+- `main.py`：程序启动入口
+- `src/github_repo_downloader.py`：核心业务逻辑
+
 1. 下载对应浏览器的驱动：
 
 - Chrome 驱动：[chromedriver](https://googlechromelabs.github.io/chrome-for-testing/)
