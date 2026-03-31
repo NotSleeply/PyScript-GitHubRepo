@@ -5,13 +5,14 @@ github:
 download:
   mode: "git" # "zip" 或 "git"
   save_path: "./repos" # 仓库存放的目录
-  target_ref: "main" # 默认拉取的分支或 Tag
+  target_ref: "master" # 默认拉取的分支或 Tag
   keep_zip: false # ZIP 模式下解压后是否保留 ZIP 文件
 
 filter:
   language: "" # 语言筛选，示例: "Python"
   min_stars: 0 # 最小星标数
   updated_after: "" # 更新时间筛选，示例: "2023-01-01"
+  max_repos: 0 # 最大下载数量限制，0表示不限制
 
 concurrency:
   max_workers: 5 # 多线程并发数

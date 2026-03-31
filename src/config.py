@@ -20,6 +20,7 @@ def parse_and_merge_args():
     parser.add_argument("--language", help="Filter by language")
     parser.add_argument("--min-stars", type=int, help="Filter by min stars")
     parser.add_argument("--updated-after", help="Filter by updated date (YYYY-MM-DD)")
+    parser.add_argument("--max-repos", type=int, help="Limit maximum number of repositories to download (0 for unlimited)")
     parser.add_argument("--max-workers", type=int, help="Number of concurrent threads")
     parser.add_argument("--report-format", choices=['markdown', 'csv'], help="Report format")
     parser.add_argument("--report-dir", help="Report output directory")
@@ -43,6 +44,7 @@ def parse_and_merge_args():
         "language": args.language or c_filter.get('language'),
         "min_stars": args.min_stars if args.min_stars is not None else c_filter.get('min_stars', 0),
         "updated_after": args.updated_after or c_filter.get('updated_after'),
+        "max_repos": args.max_repos if args.max_repos is not None else c_filter.get('max_repos', 0),
         "max_workers": args.max_workers or c_conc.get('max_workers', 5),
         "report_format": args.report_format or c_repo.get('format', 'markdown'),
         "report_dir": args.report_dir or c_repo.get('output_dir', '.')

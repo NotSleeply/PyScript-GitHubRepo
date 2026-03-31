@@ -60,3 +60,6 @@ tmp/
 # 本地配置
 local_settings.py
 db.sqlite3
+
+/reports/
+/repos

@@ -2,7 +2,7 @@
 
 这是一个用于自动下载指定 GitHub 用户仓库代码的工具，通过 Selenium 模拟浏览器操作，实现批量下载仓库的 ZIP 压缩包。
 
-## 安装步骤
+## 快速启动
 
 1. 安装依赖库：
 
@@ -15,11 +15,6 @@ pip install -r requirements.txt
 ``` powershell
 pip install uv
 ```
-
-1. 目录结构：
-
-- `main.py`：程序启动入口
-- `src/github_repo_downloader.py`：核心业务逻辑
 
 1. 下载对应浏览器的驱动：
 

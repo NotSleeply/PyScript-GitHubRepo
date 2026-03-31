@@ -43,7 +43,7 @@ def process_repo(repo, opts, history, progress, overall_task, stats, stats_lock)
         progress.update(task_id, description=f"[red]Failed {repo_name}[/red]")
         with stats_lock:
             stats["failed"] += 1
-        logger.error(f"Failed to process {repo_name} after retries: {str(e)}")
+        logger.error(f"Failed to process {repo_name} after retries: {e}")
         status = "failed"
         current_updated = last_updated
         
@@ -58,7 +58,7 @@ def run():
         return
         
     console.print(f"[cyan]Fetching repositories for user: {opts['username']}...[/cyan]")
-    repos = get_repos(opts['username'], opts['token'], opts['language'], opts['min_stars'], opts['updated_after'])
+    repos = get_repos(opts['username'], opts['token'], opts['language'], opts['min_stars'], opts['updated_after'], opts['max_repos'])
     console.print(f"[bold green]Found {len(repos)} repositories matching criteria.[/bold green]")
     
     if not repos:

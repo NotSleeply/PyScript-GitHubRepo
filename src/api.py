@@ -2,7 +2,7 @@ import requests
 from datetime import datetime
 from src.logger import logger
 
-def get_repos(username, token, language, min_stars, updated_after):
+def get_repos(username, token, language, min_stars, updated_after, max_repos=0):
     repos = []
     page = 1
     headers = {"Accept": "application/vnd.github.v3+json"}
@@ -11,7 +11,12 @@ def get_repos(username, token, language, min_stars, updated_after):
         
     while True:
         url = f"https://api.github.com/users/{username}/repos?per_page=100&page={page}"
-        resp = requests.get(url, headers=headers)
+        try:
+            resp = requests.get(url, headers=headers, timeout=15)
+        except requests.exceptions.RequestException as e:
+            logger.error("Network error while accessing GitHub API: %s", e)
+            break
+            
         if resp.status_code == 404:
             logger.error("User not found: %s", username)
             break
@@ -37,5 +42,11 @@ def get_repos(username, token, language, min_stars, updated_after):
                 if r_date < f_date:
                     continue
             repos.append(r)
+            if max_repos > 0 and len(repos) >= max_repos:
+                break
+        
+        if max_repos > 0 and len(repos) >= max_repos:
+            break
+            
         page += 1
     return repos

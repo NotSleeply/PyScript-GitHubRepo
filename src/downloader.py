@@ -15,24 +15,40 @@ class NonRetryableError(Exception):
 @retry(retry=retry_if_exception_type(RetryableError), stop=stop_after_attempt(3), wait=wait_fixed(2))
 def download_zip(repo, opts, progress, task_id):
     repo_name = repo['name']
-    target_ref = opts['target_ref']
+    target_ref = opts.get('target_ref')
+    if not target_ref:
+        target_ref = repo.get('default_branch', 'main')
+    fallback_ref = repo.get('default_branch', 'main')
+    
     save_path = opts['save_path']
-    zip_url = f"https://github.com/{repo['owner']['login']}/{repo_name}/archive/refs/heads/{target_ref}.zip"
     
     headers = {}
     if opts.get('token'):
         headers["Authorization"] = f"token {opts['token']}"
         
+    def try_download(ref):
+        urls_to_try = [
+            f"https://github.com/{repo['owner']['login']}/{repo_name}/archive/refs/heads/{ref}.zip",
+            f"https://github.com/{repo['owner']['login']}/{repo_name}/archive/refs/tags/{ref}.zip"
+        ]
+        for url in urls_to_try:
+            resp = requests.get(url, headers=headers, stream=True)
+            if resp.status_code == 200:
+                return resp
+            if resp.status_code in [500, 502, 503, 504]:
+                raise RetryableError(f"Server error {resp.status_code}")
+        return None
+
     try:
-        resp = requests.get(zip_url, headers=headers, stream=True)
-        if resp.status_code == 404:
-            zip_url_tag = f"https://github.com/{repo['owner']['login']}/{repo_name}/archive/refs/tags/{target_ref}.zip"
-            resp = requests.get(zip_url_tag, headers=headers, stream=True)
-            if resp.status_code == 404:
-                raise NonRetryableError(f"Branch or Tag '{target_ref}' not found for {repo_name}.")
-                
-        if resp.status_code in [500, 502, 503, 504]:
-            raise RetryableError(f"Server error {resp.status_code}")
+        resp = try_download(target_ref)
+        # 如果指定的 target_ref 没找到，而且和仓库的默认分支不同，则退化尝试默认分支
+        if not resp and target_ref != fallback_ref:
+            progress.update(task_id, description=f"Target {target_ref} missed, trying fallback: {fallback_ref}")
+            resp = try_download(fallback_ref)
+            
+        if not resp:
+            raise NonRetryableError(f"Branch or Tag '{target_ref}' (and fallback '{fallback_ref}') not found for {repo_name}.")
+            
         resp.raise_for_status()
         
         total_size = int(resp.headers.get('content-length', 0))
@@ -71,7 +87,11 @@ def download_zip(repo, opts, progress, task_id):
 @retry(retry=retry_if_exception_type(RetryableError), stop=stop_after_attempt(3), wait=wait_fixed(2))
 def clone_git(repo, opts, progress, task_id):
     repo_name = repo['name']
-    target_ref = opts['target_ref']
+    target_ref = opts.get('target_ref')
+    if not target_ref:
+        target_ref = repo.get('default_branch', 'main')
+    fallback_ref = repo.get('default_branch', 'main')
+    
     save_path = opts['save_path']
     clone_url = repo['clone_url'] 
     
@@ -86,14 +106,26 @@ def clone_git(repo, opts, progress, task_id):
             git_repo = Repo(repo_path)
             origin = git_repo.remotes.origin
             origin.pull()
-            git_repo.git.checkout(target_ref)
+            try:
+                git_repo.git.checkout(target_ref)
+            except GitCommandError:
+                if target_ref != fallback_ref:
+                    git_repo.git.checkout(fallback_ref)
+                else:
+                    raise
         else:
-            git_repo = Repo.clone_from(clone_url, repo_path)
-            git_repo.git.checkout(target_ref)
+            try:
+                git_repo = Repo.clone_from(clone_url, repo_path, branch=target_ref)
+            except GitCommandError as e:
+                # Checkout original default fallback if specific ref not found
+                if ('not found' in str(e).lower() or 'could not read from remote' in str(e).lower() or 'remote branch' in str(e).lower()) and target_ref != fallback_ref:
+                    git_repo = Repo.clone_from(clone_url, repo_path, branch=fallback_ref)
+                else:
+                    raise e
         return "Success"
     except GitCommandError as e:
-        if 'not found' in str(e).lower() or 'Could not read from remote' in str(e):
-            raise NonRetryableError(f"Branch/Tag {target_ref} issue or permission error: {e}")
+        if 'not found' in str(e).lower() or 'could not read from remote' in str(e).lower():
+            raise NonRetryableError(f"Branch/Tag issue or permission error: {e}")
         raise RetryableError(f"Git execution error: {e}")
     except Exception as e:
         raise RetryableError(f"Unknown git error: {e}")
