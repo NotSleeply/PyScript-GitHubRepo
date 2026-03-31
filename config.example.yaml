@@ -18,4 +18,4 @@ concurrency:
 
 report:
   format: "markdown" # "markdown" 或 "csv"
-  # output_dir: "."      # 可选，报告输出目录
+  # output_dir: "./reports"      # 可选，报告输出目录
