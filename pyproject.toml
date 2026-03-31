@@ -15,6 +15,10 @@ dependencies = [
   "beautifulsoup4>=4.10.0",
   "lxml>=4.8.0",
   "uv>=0.5.0",
+  "gitpython>=3.1.46",
+  "pyyaml>=6.0.3",
+  "rich>=14.3.3",
+  "tenacity>=9.0.0",
 ]
 
 [project.scripts]

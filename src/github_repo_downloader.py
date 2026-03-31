@@ -1,123 +1,106 @@
-import time
-import requests
-from bs4 import BeautifulSoup
-from selenium.webdriver.chrome.webdriver import WebDriver as ChromeDriver
-from selenium.webdriver.edge.webdriver import WebDriver as EdgeDriver
-from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.edge.service import Service as EdgeService
-from selenium.webdriver.edge.options import Options as EdgeOptions
-from selenium.webdriver.common.by import By
+import os
+from datetime import datetime
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-DEFAULT_URL = "https://github.com/codewithsadee?page=1&tab=repositories"
-WAIT_TIME = 2
-WAIT_DOWN_TIME = 30
-POSITION_X = 250
-POSITION_Y = 0
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn, TimeRemainingColumn
+from rich.console import Console
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-}
+from src.logger import logger
+from src.config import parse_and_merge_args
+from src.api import get_repos
+from src.history_report import load_sync_history, save_sync_history, generate_report
+from src.downloader import download_zip, clone_git
 
+console = Console()
 
-def open_option(option):
-    option.add_argument('--no-sandbox')
-    # option.add_argument('--headless')   # 无头模式，如果需要可以取消注释
-    option.add_experimental_option('detach', True)
-    return option
-
-
-def open_driver(driver, url=DEFAULT_URL):
-    driver.set_window_position(POSITION_X, POSITION_Y)
-    driver.implicitly_wait(WAIT_DOWN_TIME * 2)
-    driver.get(url)
-    return driver
-
-
-def open_edge(url=DEFAULT_URL):
-    option = open_option(EdgeOptions())
-    driver_edge = EdgeDriver(options=option)
-    return open_driver(driver_edge, url)
-
-
-def open_chrome(url=DEFAULT_URL):
-    option = open_option(ChromeOptions())
-    driver_chrome = ChromeDriver(options=option)
-    return open_driver(driver_chrome, url)
-
-
-def get_repo_count(url=DEFAULT_URL):
-    response = requests.get(url, headers=HEADERS)
-    response.encoding = response.apparent_encoding
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'lxml')
-        repo_count_text = soup.find('span', class_='Counter')
-        if repo_count_text:
-            repo_count = repo_count_text.get_text(strip=True)
-            print('仓库数量:', repo_count)
-            try:
-                return int(repo_count)
-            except ValueError:
-                return 0
-    print('无法访问该网页, 状态码:', response.status_code)
-    return 0
-
-
-def download_github_repo(driver, url=DEFAULT_URL):
-    count = 1
-    get_count = get_repo_count(url)
-    for p in range(1, int(-(-get_count // 30)) + 1 if get_count > 0 else 1):
-        for i in range(1, 31):
-            time.sleep(WAIT_TIME)
-            try:
-                repo_link = driver.find_element(By.XPATH, f'//*[@id="user-repositories-list"]/ul/li[{i}]/div[1]/div[1]/h3/a')
-                repo_link.click()
-                time.sleep(WAIT_TIME)
-                try:
-                    code_button = driver.find_element(By.XPATH, '//*[@id=":R55ab:"]')
-                    code_button.click()
-                except Exception:
-                    try:
-                        code_button = driver.find_element(By.ID, ':R55ab:')
-                        code_button.click()
-                    except Exception:
-                        code_button = driver.find_elements(By.TAG_NAME, 'button')[23]
-                        code_button.click()
-                time.sleep(WAIT_TIME)
-                down = driver.find_element(By.LINK_TEXT, 'Download ZIP')
-                down.click()
-                time.sleep(WAIT_DOWN_TIME)
-                driver.back()
-            except Exception as e:
-                print(f'第 {count} 个仓库下载失败，错误: {e}')
-            if count >= get_count:
-                print('***-----下载完毕-----***')
-                return
-            else:
-                print(f'第{count}库下载完成')
-                count += 1
-        try:
-            next_button = driver.find_element(By.XPATH, '//*[@id="user-repositories-list"]/div/div/a')
-            next_button.click()
-            print(f'^^^^^第{p}页下载完成^^^^^')
-            time.sleep(WAIT_TIME)
-        except Exception as e:
-            print('翻页失败，结束。', e)
-            return
-
-
-def run(url=DEFAULT_URL, browser='chrome'):
-    if browser.lower() == 'edge':
-        driver = open_edge(url)
-    else:
-        driver = open_chrome(url)
-
+def process_repo(repo, opts, history, progress, overall_task, stats, stats_lock):
+    repo_name = repo['name']
+    task_id = progress.add_task(f"Waiting {repo_name}...", total=100)
+    
+    last_updated = history.get(repo_name, {}).get("updated_at")
+    current_updated = repo['updated_at']
+    
+    if last_updated == current_updated:
+        progress.update(task_id, description=f"Skipped {repo_name} (No update)", completed=100)
+        with stats_lock:
+            stats["skipped"] += 1
+        progress.advance(overall_task)
+        return repo, "skipped", current_updated
+        
     try:
-        download_github_repo(driver, url)
-        time.sleep(300)
-    finally:
-        driver.quit()
+        if opts['mode'] == 'zip':
+            download_zip(repo, opts, progress, task_id)
+        else:
+            clone_git(repo, opts, progress, task_id)
+            
+        progress.update(task_id, description=f"[green]Completed {repo_name}[/green]", completed=100)
+        with stats_lock:
+            stats["success"] += 1
+        logger.info(f"Successfully processed {repo_name}")
+        status = "success"
+    except Exception as e:
+        progress.update(task_id, description=f"[red]Failed {repo_name}[/red]")
+        with stats_lock:
+            stats["failed"] += 1
+        logger.error(f"Failed to process {repo_name} after retries: {str(e)}")
+        status = "failed"
+        current_updated = last_updated
+        
+    progress.advance(overall_task)
+    return repo, status, current_updated
 
-
-if __name__ == '__main__':
-    run()
+def run():
+    opts = parse_and_merge_args()
+    
+    if not opts['username']:
+        console.print("[red]Username is required! Provide it via config or arguments.[/red]")
+        return
+        
+    console.print(f"[cyan]Fetching repositories for user: {opts['username']}...[/cyan]")
+    repos = get_repos(opts['username'], opts['token'], opts['language'], opts['min_stars'], opts['updated_after'])
+    console.print(f"[bold green]Found {len(repos)} repositories matching criteria.[/bold green]")
+    
+    if not repos:
+        console.print("[yellow]0 repositories found or API error occurred. Check app.log for more details.[/yellow]")
+        return
+        
+    os.makedirs(opts['save_path'], exist_ok=True)
+    history = load_sync_history(opts['save_path'])
+    
+    statuses = {}
+    stats = {"success": 0, "failed": 0, "skipped": 0}
+    stats_lock = threading.Lock()
+    start_time = datetime.now()
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+        console=console,
+    ) as progress:
+        
+        overall_task = progress.add_task("[bold blue]Overall Progress", total=len(repos))
+        
+        with ThreadPoolExecutor(max_workers=opts['max_workers']) as executor:
+            futures = [executor.submit(process_repo, repo, opts, history, progress, overall_task, stats, stats_lock) for repo in repos]
+            
+            for future in as_completed(futures):
+                repo, status, new_updated_at = future.result()
+                statuses[repo['name']] = status
+                if status in ('success', 'skipped'):
+                    history[repo['name']] = {"updated_at": new_updated_at}
+                    
+    save_sync_history(opts['save_path'], history)
+    generate_report(repos, statuses, opts)
+    
+    end_time = datetime.now()
+    duration = (end_time - start_time).total_seconds()
+    
+    console.print("-" * 50)
+    console.print(f"[bold]✨ Sync Completed in {duration:.2f} seconds![/bold]")
+    console.print(f"📊 [green]Success: {stats['success']}[/green] | [red]Failed: {stats['failed']}[/red] | [yellow]Skipped: {stats['skipped']}[/yellow]")
+    console.print("-" * 50)
