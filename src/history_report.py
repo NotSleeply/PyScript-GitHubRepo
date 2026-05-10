@@ -3,12 +3,19 @@ import json
 import csv
 import shutil
 from datetime import datetime
-from rich.console import Console
 
 from src.logger import logger
 
-console = Console()
 
+_console = None
+
+
+def _get_console():
+    global _console
+    if _console is None:
+        from rich.console import Console
+        _console = Console()
+    return _console
 
 def check_disk_space(path, required_mb=1024):
     """Check if there's enough disk space available"""
@@ -36,7 +43,7 @@ def load_sync_history(save_path):
                     logger.warning("Invalid history file format, starting fresh")
                     return {}
         except (json.JSONDecodeError, IOError) as e:
-            console.print(f"[yellow]Warning: Could not load sync history: {e}[/yellow]")
+            _get_console().print(f"[yellow]Warning: Could not load sync history: {e}[/yellow]")
             return {}
     return {}
 
@@ -51,7 +58,7 @@ def save_sync_history(save_path, history):
             json.dump(history, f, indent=4)
         os.replace(temp_file, history_file)
     except IOError as e:
-        console.print(f"[red]Error saving history: {e}[/red]")
+        _get_console().print(f"[red]Error saving history: {e}[/red]")
 
 
 def generate_report(repos, statuses, stats, duration, opts):
@@ -141,7 +148,7 @@ def generate_report(repos, statuses, stats, duration, opts):
                 
                 f.write(f"| {name} | {desc} | {lang} | {stars} | {updated} | {status_emoji} {status} |\n")
                 
-    console.print(f"[bold green]✅ Report generated: {filepath}[/bold green]")
+    _get_console().print(f"[bold green]✅ Report generated: {filepath}[/bold green]")
     return filepath
 
 

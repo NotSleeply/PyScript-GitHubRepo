@@ -5,10 +5,6 @@ from datetime import datetime
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn, TimeRemainingColumn
-from rich.console import Console
-from rich.table import Table
-
 from src.logger import logger
 from src.config import parse_and_merge_args
 from src.api import get_repos
@@ -21,7 +17,17 @@ from src.history_report import (
 )
 from src.downloader import download_zip, clone_git
 
-console = Console()
+
+_console = None
+
+
+def _get_console():
+    global _console
+    if _console is None:
+        from rich.console import Console
+        _console = Console()
+    return _console
+
 
 global_interrupt = False
 
@@ -29,6 +35,7 @@ global_interrupt = False
 def signal_handler(signum, frame):
     """Handle Ctrl+C gracefully"""
     global global_interrupt
+    console = _get_console()
     if not global_interrupt:
         console.print("\n[yellow]⚠️  Interrupt received, finishing current tasks...[/yellow]")
         console.print("[yellow]Press Ctrl+C again to force exit.[/yellow]")
@@ -88,6 +95,9 @@ def process_repo(repo, opts, history, progress, overall_task, stats, stats_lock)
 
 def display_preview(repos, opts):
     """Display dry-run preview table"""
+    from rich.table import Table
+
+    console = _get_console()
     console.print("\n[bold cyan]📋 DRY RUN MODE - Preview[/bold cyan]\n")
     
     table = Table(title=f"Repositories to Download: {opts['username']}")
@@ -127,6 +137,11 @@ def display_preview(repos, opts):
 
 
 def run():
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn, TimeRemainingColumn
+    from rich.table import Table
+
+    console = _get_console()
+
     signal.signal(signal.SIGINT, signal_handler)
     
     try:

@@ -1,5 +1,4 @@
 import os
-import yaml
 import argparse
 import re
 from datetime import datetime
@@ -47,6 +46,8 @@ def validate_config(opts):
 
 
 def load_config(config_path):
+    import yaml
+
     if os.path.exists(config_path):
         try:
             with open(config_path, 'r', encoding='utf-8') as f:

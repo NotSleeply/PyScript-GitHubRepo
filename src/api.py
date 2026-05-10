@@ -1,9 +1,10 @@
-import requests
 from datetime import datetime
 from src.logger import logger
 
 
 def get_repos(username, token, language, min_stars, updated_after, max_repos=0):
+    import requests
+
     repos = []
     page = 1
     headers = {"Accept": "application/vnd.github.v3+json"}
