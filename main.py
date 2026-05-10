@@ -1,4 +1,4 @@
-from src.github_repo_downloader import run
+from src.cli import run
 
 
 if __name__ == '__main__':

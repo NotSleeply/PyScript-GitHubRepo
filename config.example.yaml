@@ -22,7 +22,16 @@ report:
   format: "markdown"        # Report format: "markdown", "csv", or "json"
   output_dir: "./reports"   # Directory to save report files
 
+# Optional: LLM-driven filtering. Requires `uv pip install -e '.[agent]'`
+# and either api_key here or ANTHROPIC_API_KEY env var. When set, this
+# runs after traditional filters and narrows repos via Claude.
+# agent:
+#   filter: ""               # e.g. "only the best CLI tools"
+#   model: "claude-haiku-4-5-20251001"
+#   # api_key: "sk-..."      # Prefer the ANTHROPIC_API_KEY env var
+
 # Advanced options (CLI only, not in YAML):
 # --dry-run                 Preview what would be downloaded without actually downloading
 # --verbose                 Enable debug-level logging output
+# --json                    Emit machine-readable JSON on stdout (for agent/skill use)
 # --version                 Show version number and exit
