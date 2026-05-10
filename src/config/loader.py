@@ -83,7 +83,7 @@ Examples:
         "--agent-api-key",
         help="Anthropic API key for --agent-filter (falls back to ANTHROPIC_API_KEY env)",
     )
-    parser.add_argument("-v", "--version", action='version', version='%(prog)s 0.1.0')
+    parser.add_argument("-v", "--version", action='version', version='%(prog)s 0.2.0')
 
     return parser
 

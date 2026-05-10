@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyscript-githubrepo"
-version = "0.1.0"
+version = "0.2.0"
 description = "A modern, high-performance Python tool for batch downloading/synchronizing GitHub repositories via API with multi-threading, dual-mode support (Git/ZIP), and intelligent filtering."
 authors = [{ name = "NotSleeply", email = "notsleeply@example.com" }]
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.8.1"
+requires-python = ">=3.11"
 keywords = ["github", "repository", "downloader", "synchronization", "batch", "git", "api", "python"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -79,7 +79,7 @@ markers = [
 
 [tool.black]
 line-length = 100
-target-version = ['py38']
+target-version = ['py311']
 
 [tool.flake8]
 max-line-length = 100
