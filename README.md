@@ -1,175 +1,168 @@
 # PyScript-GitHubRepo 🚀
 
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/NotSleeply/PyScript-GitHubRepo/actions/workflows/ci.yml/badge.svg)](https://github.com/NotSleeply/PyScript-GitHubRepo/actions/workflows/ci.yml)
+[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Issues](https://img.shields.io/github/issues/NotSleeply/PyScript-GitHubRepo)](https://github.com/NotSleeply/PyScript-GitHubRepo/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/NotSleeply/PyScript-GitHubRepo?style=social)](https://github.com/NotSleeply/PyScript-GitHubRepo/stargazers)
 
-**A modern, high-performance, and robust Python tool for batch downloading or synchronizing all open-source repositories from any GitHub user via the GitHub API.**
+**Batch-clone or sync every public repository of a GitHub user/org from the command line — and from other agents.**
 
-Completely refactored from slow and error-prone browser automation (Selenium) to a fully modular architecture, providing you with a seamless cloning and backup experience.
+A CLI-first Python tool with structured JSON output, an optional LLM-driven filter, and a [SKILL.md](./skill/SKILL.md) so other Claude Agent–style runners can drive it programmatically.
 
 ---
 
 ## ✨ Key Features
 
-- **🚀 Multi-threaded High-Speed Concurrency**: Built-in multi-threading support (via `max_workers` config), enabling massive repository cloning/downloading at lightning speed - no more waiting in queue!
-- **📦 Dual Mode Support: Git Clone & ZIP Extraction**
-  - **Git Mode**: Uses `GitPython` to automatically trigger `git pull` if the repo exists locally, otherwise performs `git clone`, perfectly preserving commit history and Git records.
-  - **ZIP Mode**: Rapidly fetches packaged Zip source files via API with **automatic extraction**, auto-cleans branch suffix directories (e.g., `repo-main`), giving you clean project names.
-- **🔍 Powerful Conditional Filtering**:
-  - `language`: Download only projects in specified programming languages (e.g., `Python`, `JavaScript`)
-  - `min_stars`: Set minimum star threshold to filter out low-quality repos
-  - `updated_after`: Only download active repositories updated after a specific date
-  - `max_repos`: Limit maximum number of operations to save bandwidth
-- **🔀 Smart Branch Fallback**: Set any desired target branch via `target_ref`. If that branch (or Tag) doesn't exist, the system automatically queries its real **default branch** and seamlessly falls back, greatly reducing 404/Branch Not Found errors!
-- **♻️ Incremental Sync & Checkpoint Strategy**: Automatically records update timestamps via `last_sync.json` in the target directory. If no new changes exist, the tool skips processing to conserve resources.
-- **🛡️ Retry & Fault Tolerance Mechanism**: Exponential retry logic based on `Tenacity`. Automatically handles network fluctuations, 502 errors, logs critical fatal errors to `app.log`, preventing a single bad repository from crashing the entire process.
-- **📊 Automated Summary Reports**: Generates Markdown or CSV format summary reports in the target directory (default `./reports`) upon download completion.
-- **🎨 Beautiful CLI Interface**: Dynamic progress bar built with `Rich`, providing clear visibility into multi-task execution status - say goodbye to log flooding!
-
-## 📸 Demo (Coming Soon)
-
-<!-- Add screenshot or GIF here -->
+- **🚀 Concurrent downloads** — configurable worker pool (default 5) pulls many repos in parallel.
+- **📦 Dual backend** — `git` mode clones with history via GitPython; `zip` mode is faster, auto-extracts, and removes the branch-suffix top-level dir.
+- **🔍 Filters** — `--language`, `--min-stars`, `--updated-after`, `--max-repos`, `--exclude`.
+- **🤖 Optional LLM filter (`--agent-filter`)** — describe what you want in plain language, Claude narrows the list. See [🧠 Agent filter](#-agent-filter).
+- **🔀 Branch fallback** — if `--target-ref` doesn't exist, auto-falls back to the repo's default branch.
+- **♻️ Incremental sync** — `last_sync.json` in the target dir skips repos whose `updated_at` is unchanged.
+- **🛡️ Retry & fault tolerance** — tenacity-powered retries on transient errors; all failures logged to `app.log`.
+- **📊 Reports** — markdown / CSV / JSON summary of every run in `./reports/`.
+- **🎨 Two output modes** — pretty `rich` UI for humans, pure-JSON stream for agents (`--json`).
+- **⚡ Lazy imports** — `import main` adds ~4 MB RSS / 44 ms cold. Heavy deps (`requests`, `git`, `rich`, `tenacity`, `anthropic`) are loaded only when the code path needs them.
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
-
-Use `uv` for ultra-fast virtual environment setup and dependency installation:
+### 1. Install
 
 ```bash
-uv sync
+uv sync                          # install runtime deps
+uv pip install -e '.[dev]'       # + test tooling
+uv pip install -e '.[agent]'     # + the LLM filter (optional)
 ```
 
-### 2. Prepare Configuration (Critical!)
-
-When cloning or pulling large-scale content, it's very easy to trigger GitHub's unauthenticated rate limit. We need to provide a Token first:
-
-1. Visit your GitHub Token generation page: [Generate new token (classic)](https://github.com/settings/tokens)
-2. No complex permissions needed (if only downloading public repos). Generate and copy your Token starting with `ghp_`.
-3. Copy the example configuration file:
+### 2. Configure
 
 ```bash
 cp config.example.yaml config.yaml
+# Edit config.yaml: set github.username and (recommended) github.token
 ```
 
-Modify `config.yaml` with your information:
+A GitHub token avoids the 60/hour unauthenticated rate limit — any classic PAT with the `public_repo` scope is enough.
 
-```yaml
-github:
-  username: "codewithsadee"  # GitHub username whose repos you want to download
-  token: "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXX"  # Your Token to avoid rate limiting
-
-download:
-  mode: "git"            # "zip" or "git"
-  save_path: "./repos"   # Directory to save repositories
-  target_ref: "main"     # Default branch or Tag to pull
-```
-
-### 3. Run the Tool
-
-Execute directly through the entry file:
+### 3. Run
 
 ```bash
-uv run main.py
+# Human-friendly output with rich progress bars
+uv run main.py --username tiangolo --language Python --min-stars 100
+
+# Dry-run to preview without downloading
+uv run main.py --username tiangolo --dry-run --max-repos 5
+
+# JSON output for agents / scripts
+uv run main.py --username tiangolo --json --max-repos 5
 ```
 
-You can also use **CLI arguments** to temporarily override any YAML configuration:
+## 🤖 JSON mode
+
+Add `--json` and `stdout` becomes a single parseable JSON object. All rich UI / progress / warnings go to `stderr`. Exit codes:
+
+| Code | Meaning |
+|---|---|
+| `0` | Success, or dry-run completed |
+| `1` | Config error, no repos matched, or insufficient disk space |
+| `2` | At least one repo failed (see `failed[]`) |
+
+Full schema and error codes are documented in [`skill/SKILL.md`](./skill/SKILL.md). Typical agent usage:
 
 ```bash
-# Download only the latest 3 Python-related starred repos:
-uv run main.py --username tiangolo --language Python --min-stars 50 --max-repos 3 --mode git
+out=$(uv run main.py --username tiangolo --json --max-repos 3)
+echo "$out" | jq '.stats'
+echo "$out" | jq -r '.failed[]'
 ```
 
-After execution, the system will output a beautiful summary report! You can also view the auto-generated `.md` document report in the directory!
+## 🧠 Agent filter
 
-## 🔧 Configuration Reference
-
-See [config.example.yaml](config.example.yaml) for all available options:
-
-| Section | Option | Description | Default |
-|---------|--------|-------------|---------|
-| **github** | `username` | Target GitHub username | Required |
-| | `token` | GitHub personal access token (optional but recommended) | None |
-| **download** | `mode` | Download mode: `"git"` or `"zip"` | `"git"` |
-| | `save_path` | Directory to save repositories | `"./repos"` |
-| | `target_ref` | Branch or tag to checkout | `"master"` |
-| | `keep_zip` | Keep zip file after extraction (ZIP mode only) | `false` |
-| **filter** | `language` | Filter by programming language | `""` (all) |
-| | `min_stars` | Minimum star count threshold | `0` |
-| | `updated_after` | Only include repos updated after date (YYYY-MM-DD) | `""` |
-| | `max_repos` | Maximum number of repos to process | `0` (unlimited) |
-| **concurrency** | `max_workers` | Number of concurrent threads | `5` |
-| **report** | `format` | Report format: `"markdown"` or `"csv"` | `"markdown"` |
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-PyScript-GitHubRepo/
-├── src/
-│   ├── api.py                    # GitHub API interaction
-│   ├── config.py                 # Configuration parsing & merging
-│   ├── downloader.py             # Git clone & ZIP download logic
-│   ├── github_repo_downloader.py # Main orchestrator
-│   ├── history_report.py         # History tracking & report generation
-│   └── logger.py                 # Logging setup
-├── drivers/                      # Browser drivers (legacy)
-├── main.py                       # Entry point
-├── config.example.yaml           # Example configuration
-├── pyproject.toml                # Project metadata & dependencies
-└── requirements.txt              # Dependencies list
-```
-
-### Running Tests
+Narrow the repo list with a natural-language prompt via Claude. Install the optional extra first:
 
 ```bash
-# Add test commands here when tests are implemented
+uv pip install -e '.[agent]'
+export ANTHROPIC_API_KEY=sk-...
 ```
+
+Then:
+
+```bash
+uv run main.py --username tiangolo --json --agent-filter "only CLI tools, not web frameworks"
+```
+
+The LLM sees only public metadata (name, description, language, stars, `updated_at`) — never your token. The JSON response gains an `agent_filter` field with prompt, model, rationale, and counts. Default model: `claude-haiku-4-5-20251001` (override with `--agent-model`).
+
+## 🔌 Use as a skill from another agent
+
+[`skill/SKILL.md`](./skill/SKILL.md) is a standard Claude Agent skill descriptor — drop the repo into a plugin path, another agent reads the frontmatter, and it knows when and how to invoke this tool. The contract is: always pass `--json`, read exit codes, parse stdout.
+
+## 🔧 Configuration
+
+CLI flags override YAML. See [`config.example.yaml`](config.example.yaml) for the full shape. Commonly used:
+
+| Flag | Purpose | Default |
+|---|---|---|
+| `--username` | Required. Target user/org. | — |
+| `--token` | GitHub PAT. Strongly recommended. | from env |
+| `--mode` | `git` (with history) or `zip` (faster). | `git` |
+| `--save-path` | Where to write repos. | `./repos` |
+| `--target-ref` | Branch/tag; falls back to default branch on 404. | `main` |
+| `--language` / `--min-stars` / `--updated-after` / `--max-repos` / `--exclude` | Traditional filters. | — |
+| `--agent-filter` | LLM filter (optional extra). | off |
+| `--max-workers` | Thread pool size. 3–10 recommended. | `5` |
+| `--report-format` | `markdown` / `csv` / `json`. | `markdown` |
+| `--json` | Structured stdout for agents. | off |
+| `--dry-run` | Preview, no downloads. | off |
+| `--verbose` | Debug-level logging to stderr + `app.log`. | off |
+
+## 🛠️ Architecture
+
+```text
+src/
+├── cli/          user layer  — argparse, rich UI, --json runner, signal handling
+├── core/         orchestration — ThreadPoolExecutor, per-repo processor
+├── github/       integration — REST API client + git/zip backends
+├── config/       configuration — YAML + CLI + validator
+├── reports/      output — history, markdown/csv/json reports, disk preflight
+├── log/          logging — idempotent setup + per-layer child loggers
+└── agent/        optional — LLM-driven filter (needs `anthropic` extra)
+```
+
+Each layer only depends on layers below it: `cli → core → (github, reports) → (config, log)`. Heavy third-party deps are imported lazily so that `--help`, `--version`, and pure-JSON error paths stay fast.
+
+Old flat paths (`src.api`, `src.downloader`, `src.history_report`, `src.logger`, `src.github_repo_downloader`) still work as re-export shims for backward compatibility.
+
+## 🧪 Tests
+
+```bash
+uv run pytest                            # 157 tests, 72% coverage
+uv run pytest -k issue_                  # regression suite only
+uv run pytest --cov=src --cov-report=term
+```
+
+CI runs on `ubuntu-latest` × `windows-latest` with Python `3.11` / `3.12` on every PR.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [CONTRIBUTING.md](./docs/CONTRIBUTING.md) guide for details on:
-
-- Code of Conduct
-- How to submit Pull Requests
-- Coding standards
-- Reporting bugs
+See [CONTRIBUTING.md](./docs/CONTRIBUTING.md). Every PR should come with a regression test that fails before the fix and passes after.
 
 ## 📝 Changelog
 
-View the [CHANGELOG.md](./docs/CHANGELOG.md) for version history and updates.
+See [CHANGELOG.md](./docs/CHANGELOG.md).
 
 ## ⚠️ Disclaimer
 
-This tool is intended for **educational and research purposes only**. Users assume full responsibility and risk for using this tool. Please adhere to the following principles:
-
-- Comply with GitHub's Terms of Service and rate limits
-- Respect the intellectual property rights and licenses of open source project authors
-- Do not use downloaded code for commercial purposes (unless explicitly allowed by the original project license)
-- The developer is not responsible for any issues or losses resulting from the use of this tool
-
-By using this tool, you agree to the above disclaimer. If you do not agree, please do not use this tool.
+Educational and research use only. You are responsible for complying with GitHub's Terms of Service and the licenses of the repositories you download.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [GitPython](https://gitpython.readthedocs.io/) - For Git operations
-- [Rich](https://rich.readthedocs.io/) - For beautiful terminal output
-- [Tenacity](https://tenacity.readthedocs.io/) - For retry logic
-- [PyYAML](https://pyyaml.org/) - For YAML configuration parsing
+MIT — see [LICENSE](LICENSE).
 
 ## 💬 Support
 
-- 📖 **Documentation**: Check this README and [中文文档](./docs/README_CN.md)
-- 🐛 **Bug Reports**: [Open an Issue](https://github.com/NotSleeply/PyScript-GitHubRepo/issues)
-- 💡 **Feature Requests**: [Start a Discussion](https://github.com/NotSleeply/PyScript-GitHubRepo/discussions)
-- ⭐ **Star this project** if you find it helpful!
+- 📖 **Docs**: this file + [中文文档](./docs/README_CN.md) + [`skill/SKILL.md`](./skill/SKILL.md) (agent contract)
+- 🐛 **Bugs**: [Open an issue](https://github.com/NotSleeply/PyScript-GitHubRepo/issues)
+- ⭐ **Star** the project if it saves you time
 
 ---
 
