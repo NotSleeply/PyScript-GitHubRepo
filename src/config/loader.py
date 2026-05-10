@@ -70,6 +70,19 @@ Examples:
         dest='json_output',
         help="Emit machine-readable JSON on stdout (for agent/skill use); rich UI is suppressed",
     )
+    parser.add_argument(
+        "--agent-filter",
+        metavar="PROMPT",
+        help="Natural-language repository filter applied via Claude after traditional filters (e.g. \"only the best CLI tools\"). Requires the `anthropic` package and an API key.",
+    )
+    parser.add_argument(
+        "--agent-model",
+        help="Claude model for --agent-filter (default: claude-haiku-4-5-20251001)",
+    )
+    parser.add_argument(
+        "--agent-api-key",
+        help="Anthropic API key for --agent-filter (falls back to ANTHROPIC_API_KEY env)",
+    )
     parser.add_argument("-v", "--version", action='version', version='%(prog)s 0.1.0')
 
     return parser
@@ -85,6 +98,7 @@ def parse_and_merge_args():
     c_filter = config.get('filter', {})
     c_conc = config.get('concurrency', {})
     c_repo = config.get('report', {})
+    c_agent = config.get('agent', {})
 
     opts = {
         "username": args.username or c_github.get('username'),
@@ -104,6 +118,9 @@ def parse_and_merge_args():
         "dry_run": args.dry_run,
         "verbose": args.verbose,
         "json_output": args.json_output,
+        "agent_filter": args.agent_filter or c_agent.get('filter'),
+        "agent_model": args.agent_model or c_agent.get('model'),
+        "agent_api_key": args.agent_api_key or c_agent.get('api_key'),
     }
 
     errors, warnings = validate_config(opts)

@@ -56,6 +56,28 @@ def run_human(opts) -> int:
         repos = [r for r in repos if r['name'] not in exclude_set]
         console.print(f"[yellow]🚫 Excluded {before - len(repos)} repositories (exclude list)[/yellow]")
 
+    if opts.get('agent_filter') and repos:
+        from src.agent import AgentError, select_repositories
+
+        console.print(
+            f"[magenta]🤖 Agent filter: asking {opts.get('agent_model') or 'Claude'} — "
+            f"{opts['agent_filter']!r}[/magenta]"
+        )
+        try:
+            repos, meta = select_repositories(
+                repos,
+                opts['agent_filter'],
+                model=opts.get('agent_model'),
+                api_key=opts.get('agent_api_key'),
+            )
+            console.print(
+                f"[magenta]   → Selected {meta['selected_count']}/{meta['total_considered']}: "
+                f"{meta['rationale']}[/magenta]"
+            )
+        except AgentError as e:
+            console.print(f"[red]❌ Agent filter failed ({e.code}): {e}[/red]")
+            return 1
+
     console.print(f"[bold green]✅ Found {len(repos)} repositories matching criteria.[/bold green]")
 
     if not repos:

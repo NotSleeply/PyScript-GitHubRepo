@@ -66,8 +66,43 @@ Emits a rich progress UI and a Markdown/CSV summary report. Don't parse its stdo
 | `--dry-run` | Preview matches, do not download | `--dry-run` |
 | `--json` | Structured output for agents | `--json` |
 | `--config` | Path to YAML config with defaults | `--config config.yaml` |
+| `--agent-filter` | Natural-language filter via Claude (optional) | `--agent-filter "best CLI tools"` |
+| `--agent-model` | Claude model for `--agent-filter` | `--agent-model claude-haiku-4-5-20251001` |
+| `--agent-api-key` | API key for `--agent-filter` (or `ANTHROPIC_API_KEY` env) | |
 
 CLI flags override the equivalent YAML keys. See `config.example.yaml` for the YAML layout.
+
+## LLM-driven filtering (`--agent-filter`)
+
+Optional feature. After traditional filters (language/stars/date/excludes) run, the remaining repos can be narrowed further with a natural-language prompt. Useful when the user asks for something subjective ("best CLI tools", "frameworks, not apps", "repos that would help learning Rust").
+
+Requirements:
+- `uv pip install anthropic` (or install the `agent` extra: `uv pip install -e '.[agent]'`)
+- Set `ANTHROPIC_API_KEY` or pass `--agent-api-key`
+
+Behavior:
+- The model sees only public metadata — name, description, language, stars, updated_at. Never the token or file content.
+- Default model: `claude-haiku-4-5-20251001`. Override with `--agent-model`.
+- Hard cap of 100 candidates sent to the model. If traditional filters leave more, narrow them first (e.g. raise `--min-stars`).
+- If the model fails or returns invalid JSON, the JSON runner emits `status=error, error=agent_invalid_response` and exits 1.
+
+JSON output gains an `agent_filter` field:
+
+```json
+{
+  "status": "ok",
+  "agent_filter": {
+    "prompt": "only CLI tools",
+    "model": "claude-haiku-4-5-20251001",
+    "selected_count": 3,
+    "total_considered": 12,
+    "rationale": "Selected based on descriptions indicating CLI / terminal usage."
+  },
+  ...
+}
+```
+
+New error codes for agent failures: `agent_missing_key`, `agent_sdk_missing`, `agent_invalid_response`.
 
 ## Output schema (JSON mode)
 

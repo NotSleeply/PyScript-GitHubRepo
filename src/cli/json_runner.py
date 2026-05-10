@@ -74,12 +74,34 @@ def run_json(opts) -> int:
     if exclude_set:
         repos = [r for r in repos if r['name'] not in exclude_set]
 
+    agent_metadata = None
+    if opts.get('agent_filter') and repos:
+        from src.agent import (
+            AgentError,
+            select_repositories,
+        )
+        try:
+            repos, agent_metadata = select_repositories(
+                repos,
+                opts['agent_filter'],
+                model=opts.get('agent_model'),
+                api_key=opts.get('agent_api_key'),
+            )
+        except AgentError as e:
+            emit_json({
+                "status": "error",
+                "error": e.code,
+                "message": str(e),
+            })
+            return 1
+
     if not repos:
         emit_json({
             "status": "error",
             "error": "no_repositories",
             "message": "No repositories matched the filters (or API request failed). Check app.log.",
             "username": opts['username'],
+            **({"agent_filter": agent_metadata} if agent_metadata else {}),
         })
         return 1
 
@@ -92,6 +114,7 @@ def run_json(opts) -> int:
             "count": len(repos),
             "estimated_size_mb": round(total_size_kb / 1024, 2),
             "save_path": os.path.abspath(opts['save_path']),
+            **({"agent_filter": agent_metadata} if agent_metadata else {}),
             "repositories": [
                 {
                     "name": r['name'],
