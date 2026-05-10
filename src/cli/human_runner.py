@@ -82,7 +82,7 @@ def run_human(opts) -> int:
 
     if not repos:
         console.print("[yellow]⚠️  No repositories found or API error occurred.[/yellow]")
-        console.print("[dim]Check app.log for details, or adjust your filters.[/dim]\n")
+        console.print("[dim]Check logs/app.log for details, or adjust your filters.[/dim]\n")
         return 1
 
     if opts.get('dry_run'):
@@ -143,7 +143,7 @@ def run_human(opts) -> int:
             console.print(f"[red]   - {name}[/red]")
         if len(failed_repos) > 10:
             console.print(f"[red]   ... and {len(failed_repos) - 10} more[/red]")
-        console.print("[dim]Check app.log for error details[/dim]\n")
+        console.print("[dim]Check logs/app.log for error details[/dim]\n")
 
     logger.info(
         "Sync completed: success=%d, failed=%d, skipped=%d, duration=%.2fs",

@@ -170,7 +170,7 @@ Possible `error` codes: `config_invalid`, `username_required`, `no_repositories`
 
 1. **Probe first with `--dry-run`** to confirm the filter targets what the user meant and the count is reasonable. Show the user the `count` and `estimated_size_mb` before committing.
 2. **Run for real** without `--dry-run`. Capture stdout, parse as JSON, check exit code.
-3. **On exit 2 (partial failure)**, inspect `failed` array. Common causes: branch/tag missing, repo is a submodule reference, network blip. The `app.log` next to the CLI has full stack traces.
+3. **On exit 2 (partial failure)**, inspect `failed` array. Common causes: branch/tag missing, repo is a submodule reference, network blip. The `logs/app.log` file (relative to where you ran the CLI) has full stack traces.
 4. **Re-runs are cheap** — the tool keeps `last_sync.json` in `save_path` and skips repos whose `updated_at` hasn't changed. So the natural retry is just invoking again.
 
 ## Example: "Clone octocat's top 3 Python repos"
@@ -186,8 +186,8 @@ Parse the returned JSON; surface `stats.success / total` to the user and any `fa
 
 ## Failure modes to handle
 
-- **Rate limit** (`status: "error"`, repo list empty) — the tool logs `"Rate limit exceeded"` to `app.log` and exits 1. Make sure `--token` is set.
-- **User not found** — same shape, `error: "no_repositories"` and `app.log` has `"User not found"`.
+- **Rate limit** (`status: "error"`, repo list empty) — the tool logs `"Rate limit exceeded"` to `logs/app.log` and exits 1. Make sure `--token` is set.
+- **User not found** — same shape, `error: "no_repositories"` and `logs/app.log` has `"User not found"`.
 - **Branch fallback** — if `--target-ref` doesn't exist, the tool auto-falls back to the repo's `default_branch`. Non-fatal.
 - **Partial failure** — exit 2 is the expected signal. The `failed` array is authoritative; don't re-derive from `repositories[].status` unless you want identical data.
 
