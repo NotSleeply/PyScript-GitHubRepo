@@ -1,83 +1,178 @@
-# GitHub 仓库自动同步下载工具 (PyScript-GitHubRepo)
+# PyScript-GitHubRepo 🚀
 
-一个现代化、高效、强健的 Python 工具，用于通过 GitHub API 批量下载或同步指定用户的所有开源仓库。完全摒弃了缓慢且容易出错的浏览器自动化（Selenium）方案，现已全面重构并模块化，为您提供丝滑的克隆与备份体验。
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Issues](https://img.shields.io/github/issues/NotSleeply/PyScript-GitHubRepo)](https://github.com/NotSleeply/PyScript-GitHubRepo/issues)
+[![GitHub Stars](https://img.shields.io/github/stars/NotSleeply/PyScript-GitHubRepo?style=social)](https://github.com/NotSleeply/PyScript-GitHubRepo/stargazers)
 
-## ✨ 核心特性
+**A modern, high-performance, and robust Python tool for batch downloading or synchronizing all open-source repositories from any GitHub user via the GitHub API.**
 
-- **🚀 多线程极速并发**：原生内置多线程支持（通过 `max_workers` 配置），海量仓库极速克隆或下载，不再需要等待单个排队。
-- **📦 双模式支持：Git Clone 与 ZIP 解压**
-  - **Git 模式**：通过 `GitPython`，本地若已有此仓库则自动触发 `git pull` 更新，否则 `git clone`，完美保留历史 Commit 和 Git 记录。
-  - **ZIP 模式**：使用 API 极速拉取打包的 Zip 源码文件并**自动解压处理**，自动清理带分支后缀（如 `repo-main`）的无用目录文件夹，还您清爽整洁的项目名。
-- **🔍 强大的按条件筛选**：
-  - `language`：仅下载指定编程语言的项目（如 `Python`, `JavaScript`）
-  - `min_stars`：设置最小星标数阈值，过滤掉无用仓库
-  - `updated_after`：指定日期后有更新的活跃仓库才被下载
-  - `max_repos`：限制最大操作仓库数，节省流量
-- **🔀 智能分支回退（Fallback）**：设定任意你想拉取的指定分支 `target_ref`。若该目标分支（或 Tag）不存在，系统将自动询问其真实**默认分支**并无感下潜回退，大幅消除 404/Branch Not Found 报错！
-- **♻️ 增量同步断点策略**：在目标目录通过 `last_sync.json` 文件全自动记录更新时间戳。如果没有新变更，工具直接跳过不浪费任何资源。
-- **🛡 重试与容错机制**：基于 `Tenacity` 的指数重试逻辑。自动辨别并处理网络波动波动、502 错误，把严重致命错误打印至日志 `app.log`，不再由于一个仓库坏掉导致整个进度崩溃。
-- **📊 自动化清单报表**：在下载结束时根据结果于目标目录（默认 `./reports`）生成 Markdown 或 CSV 格式的汇总报告。
-- **🎨 极美的命令行交互界面**：基于 `Rich` 构建的动态排版进度条，多任务执行状况一针见血，摆脱日志刷屏烦恼。
+Completely refactored from slow and error-prone browser automation (Selenium) to a fully modular architecture, providing you with a seamless cloning and backup experience.
 
-## 🚀 快速启动
+---
 
-### 1. 同步环境并安装依赖
+## ✨ Key Features
 
-利用 `uv` 极速搭建虚拟环境及并配置项目所需库（GitPython, PyYAML, rich, tenacity 等）：
+- **🚀 Multi-threaded High-Speed Concurrency**: Built-in multi-threading support (via `max_workers` config), enabling massive repository cloning/downloading at lightning speed - no more waiting in queue!
+- **📦 Dual Mode Support: Git Clone & ZIP Extraction**
+  - **Git Mode**: Uses `GitPython` to automatically trigger `git pull` if the repo exists locally, otherwise performs `git clone`, perfectly preserving commit history and Git records.
+  - **ZIP Mode**: Rapidly fetches packaged Zip source files via API with **automatic extraction**, auto-cleans branch suffix directories (e.g., `repo-main`), giving you clean project names.
+- **🔍 Powerful Conditional Filtering**:
+  - `language`: Download only projects in specified programming languages (e.g., `Python`, `JavaScript`)
+  - `min_stars`: Set minimum star threshold to filter out low-quality repos
+  - `updated_after`: Only download active repositories updated after a specific date
+  - `max_repos`: Limit maximum number of operations to save bandwidth
+- **🔀 Smart Branch Fallback**: Set any desired target branch via `target_ref`. If that branch (or Tag) doesn't exist, the system automatically queries its real **default branch** and seamlessly falls back, greatly reducing 404/Branch Not Found errors!
+- **♻️ Incremental Sync & Checkpoint Strategy**: Automatically records update timestamps via `last_sync.json` in the target directory. If no new changes exist, the tool skips processing to conserve resources.
+- **🛡️ Retry & Fault Tolerance Mechanism**: Exponential retry logic based on `Tenacity`. Automatically handles network fluctuations, 502 errors, logs critical fatal errors to `app.log`, preventing a single bad repository from crashing the entire process.
+- **📊 Automated Summary Reports**: Generates Markdown or CSV format summary reports in the target directory (default `./reports`) upon download completion.
+- **🎨 Beautiful CLI Interface**: Dynamic progress bar built with `Rich`, providing clear visibility into multi-task execution status - say goodbye to log flooding!
 
-```powershell
+## 📸 Demo (Coming Soon)
+
+<!-- Add screenshot or GIF here -->
+
+## 🚀 Quick Start
+
+### 1. Install Dependencies
+
+Use `uv` for ultra-fast virtual environment setup and dependency installation:
+
+```bash
 uv sync
 ```
 
-### 2. 准备配置 (极其重要！)
+### 2. Prepare Configuration (Critical!)
 
-在克隆或拉取大规模数量的内容时，极其容易触发 Github 的无授权访问速率限制 (Rate limit)。我们需要先提供一枚 Token：
+When cloning or pulling large-scale content, it's very easy to trigger GitHub's unauthenticated rate limit. We need to provide a Token first:
 
-1. 访问你的 GitHub 账号生成 Token 页面：[Generate new token (classic)](https://github.com/settings/tokens)
-2. 无需勾选复杂权限（若只需下载公开仓库），生成并复制你的以 `ghp_` 开头的 Token。
-3. 复制项目根目录下的配置参考文件：
+1. Visit your GitHub Token generation page: [Generate new token (classic)](https://github.com/settings/tokens)
+2. No complex permissions needed (if only downloading public repos). Generate and copy your Token starting with `ghp_`.
+3. Copy the example configuration file:
 
-```powershell
+```bash
 cp config.example.yaml config.yaml
 ```
 
-修改 `config.yaml` 填入你的信息：
+Modify `config.yaml` with your information:
 
 ```yaml
 github:
-  username: "codewithsadee" # 想要爬取下载的 Github 用户名
-  token: "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXX"  # 填入你的 Token 防止被限流
+  username: "codewithsadee"  # GitHub username whose repos you want to download
+  token: "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXX"  # Your Token to avoid rate limiting
 
 download:
-  mode: "git"            # "zip" 或 "git"
-  save_path: "./repos"   # 仓库存放的目录
-  target_ref: "main"     # 默认拉取的分支或 Tag
+  mode: "git"            # "zip" or "git"
+  save_path: "./repos"   # Directory to save repositories
+  target_ref: "main"     # Default branch or Tag to pull
 ```
 
-### 3. 开始执行
+### 3. Run the Tool
 
-直接通过入口文件一键运行：
+Execute directly through the entry file:
 
-```powershell
+```bash
 uv run main.py
 ```
 
-当然，你可以使用 **CLI 命令行参数** 对任意 YAML 配置进行临时覆盖重写：
+You can also use **CLI arguments** to temporarily override any YAML configuration:
 
-```powershell
-# 只下载最新的 3 个 Python 相关的带星仓库：
+```bash
+# Download only the latest 3 Python-related starred repos:
 uv run main.py --username tiangolo --language Python --min-stars 50 --max-repos 3 --mode git
 ```
 
-执行完毕后系统将输出优美的总结报表，你也可以去目录内查看自动生成的 `.md` 文档报告哦！
+After execution, the system will output a beautiful summary report! You can also view the auto-generated `.md` document report in the directory!
 
-## 免责声明
+## 🔧 Configuration Reference
 
-本工具仅用于学习和研究目的，使用者应自行承担使用本工具的一切风险和责任。请遵守以下原则：
+See [config.example.yaml](config.example.yaml) for all available options:
 
-- 遵守 GitHub 的使用条款和访问速率限制
-- 尊重开源项目作者的知识产权和许可协议
-- 不要将下载的代码用于商业用途（除非原项目许可证明确允许）
-- 本工具的开发者不对因使用本工具而可能导致的任何问题或损失负责
+| Section | Option | Description | Default |
+|---------|--------|-------------|---------|
+| **github** | `username` | Target GitHub username | Required |
+| | `token` | GitHub personal access token (optional but recommended) | None |
+| **download** | `mode` | Download mode: `"git"` or `"zip"` | `"git"` |
+| | `save_path` | Directory to save repositories | `"./repos"` |
+| | `target_ref` | Branch or tag to checkout | `"master"` |
+| | `keep_zip` | Keep zip file after extraction (ZIP mode only) | `false` |
+| **filter** | `language` | Filter by programming language | `""` (all) |
+| | `min_stars` | Minimum star count threshold | `0` |
+| | `updated_after` | Only include repos updated after date (YYYY-MM-DD) | `""` |
+| | `max_repos` | Maximum number of repos to process | `0` (unlimited) |
+| **concurrency** | `max_workers` | Number of concurrent threads | `5` |
+| **report** | `format` | Report format: `"markdown"` or `"csv"` | `"markdown"` |
 
-使用本工具即表示您同意上述免责声明。如果您不同意，请勿使用本工具。
+## 🛠️ Development
+
+### Project Structure
+
+```
+PyScript-GitHubRepo/
+├── src/
+│   ├── api.py                    # GitHub API interaction
+│   ├── config.py                 # Configuration parsing & merging
+│   ├── downloader.py             # Git clone & ZIP download logic
+│   ├── github_repo_downloader.py # Main orchestrator
+│   ├── history_report.py         # History tracking & report generation
+│   └── logger.py                 # Logging setup
+├── drivers/                      # Browser drivers (legacy)
+├── main.py                       # Entry point
+├── config.example.yaml           # Example configuration
+├── pyproject.toml                # Project metadata & dependencies
+└── requirements.txt              # Dependencies list
+```
+
+### Running Tests
+
+```bash
+# Add test commands here when tests are implemented
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read our [CONTRIBUTING.md](./docs/CONTRIBUTING.md) guide for details on:
+
+- Code of Conduct
+- How to submit Pull Requests
+- Coding standards
+- Reporting bugs
+
+## 📝 Changelog
+
+View the [CHANGELOG.md](./docs/CHANGELOG.md) for version history and updates.
+
+## ⚠️ Disclaimer
+
+This tool is intended for **educational and research purposes only**. Users assume full responsibility and risk for using this tool. Please adhere to the following principles:
+
+- Comply with GitHub's Terms of Service and rate limits
+- Respect the intellectual property rights and licenses of open source project authors
+- Do not use downloaded code for commercial purposes (unless explicitly allowed by the original project license)
+- The developer is not responsible for any issues or losses resulting from the use of this tool
+
+By using this tool, you agree to the above disclaimer. If you do not agree, please do not use this tool.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [GitPython](https://gitpython.readthedocs.io/) - For Git operations
+- [Rich](https://rich.readthedocs.io/) - For beautiful terminal output
+- [Tenacity](https://tenacity.readthedocs.io/) - For retry logic
+- [PyYAML](https://pyyaml.org/) - For YAML configuration parsing
+
+## 💬 Support
+
+- 📖 **Documentation**: Check this README and [中文文档](./docs/README_CN.md)
+- 🐛 **Bug Reports**: [Open an Issue](https://github.com/NotSleeply/PyScript-GitHubRepo/issues)
+- 💡 **Feature Requests**: [Start a Discussion](https://github.com/NotSleeply/PyScript-GitHubRepo/discussions)
+- ⭐ **Star this project** if you find it helpful!
+
+---
+
+<div align="center">
+  <strong>Made with ❤️ by NotSleeply</strong>
+</div>
