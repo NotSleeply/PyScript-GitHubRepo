@@ -1,6 +1,7 @@
 import os
 import argparse
 import re
+import sys
 from datetime import datetime
 from src.logger import logger
 
@@ -56,7 +57,7 @@ def load_config(config_path):
                 return config
         except yaml.YAMLError as e:
             logger.error("Failed to parse YAML configuration: %s", e)
-            print(f"[ERROR] Invalid YAML in {config_path}: {e}")
+            print(f"[ERROR] Invalid YAML in {config_path}: {e}", file=sys.stderr)
             return {}
         except IOError as e:
             logger.error("Failed to read config file: %s", e)
@@ -95,6 +96,7 @@ Examples:
     parser.add_argument("--report-dir", help="Report output directory")
     parser.add_argument("--dry-run", action='store_true', help="Preview what would be downloaded without actually downloading")
     parser.add_argument("--verbose", action='store_true', help="Enable verbose/debug logging")
+    parser.add_argument("--json", action='store_true', dest='json_output', help="Emit machine-readable JSON on stdout (for agent/skill use); rich UI is suppressed")
     parser.add_argument("-v", "--version", action='version', version='%(prog)s 0.1.0')
     
     args = parser.parse_args()
@@ -123,18 +125,19 @@ Examples:
         "report_dir": args.report_dir or c_repo.get('output_dir', '.'),
         "dry_run": args.dry_run,
         "verbose": args.verbose,
+        "json_output": args.json_output,
     }
-    
+
     errors, warnings = validate_config(opts)
-    
+
     if errors:
         for error in errors:
-            print(f"[ERROR] {error}")
+            print(f"[ERROR] {error}", file=sys.stderr)
         if not opts['dry_run']:
             raise ValueError(f"Configuration errors: {'; '.join(errors)}")
-    
+
     if warnings and opts['verbose']:
         for warning in warnings:
-            print(f"[WARNING] {warning}")
+            print(f"[WARNING] {warning}", file=sys.stderr)
     
     return opts
