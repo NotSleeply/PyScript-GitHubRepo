@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 from src.logger import logger
 
+
 def get_repos(username, token, language, min_stars, updated_after, max_repos=0):
     repos = []
     page = 1
@@ -24,29 +25,39 @@ def get_repos(username, token, language, min_stars, updated_after, max_repos=0):
             logger.error("GitHub API Rate limit exceeded. Please provide a Github Token (--token).")
             break
         elif resp.status_code != 200:
-            logger.error("Failed to fetch repos: %s", resp.text)
+            logger.error("Failed to fetch repos (HTTP %d): %s", resp.status_code, resp.text[:200])
             break
             
-        data = resp.json()
+        try:
+            data = resp.json()
+        except (ValueError, KeyError) as e:
+            logger.error("Failed to parse API response JSON: %s", e)
+            break
+            
         if not data:
             break
             
         for r in data:
-            if language and r.get('language') != language:
-                continue
-            if r.get('stargazers_count', 0) < min_stars:
-                continue
-            if updated_after:
-                r_date = datetime.strptime(r['updated_at'], "%Y-%m-%dT%H:%M:%SZ")
-                f_date = datetime.strptime(updated_after, "%Y-%m-%d")
-                if r_date < f_date:
+            try:
+                if language and r.get('language') != language:
                     continue
-            repos.append(r)
-            if max_repos > 0 and len(repos) >= max_repos:
-                break
+                if r.get('stargazers_count', 0) < min_stars:
+                    continue
+                if updated_after:
+                    r_date = datetime.strptime(r['updated_at'], "%Y-%m-%dT%H:%M:%SZ")
+                    f_date = datetime.strptime(updated_after, "%Y-%m-%d")
+                    if r_date < f_date:
+                        continue
+                repos.append(r)
+                if max_repos > 0 and len(repos) >= max_repos:
+                    break
+            except (KeyError, ValueError) as e:
+                logger.warning("Skipping malformed repo data: %s", e)
+                continue
         
         if max_repos > 0 and len(repos) >= max_repos:
             break
             
         page += 1
+        
     return repos

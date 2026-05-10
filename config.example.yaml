@@ -1,22 +1,28 @@
 github:
   username: "codewithsadee"
-  # token: "ghp_xxxxxxxxxxxx"  # 可选，用于提升 API 限流额度并访问私有仓库
+  # token: "ghp_xxxxxxxxxxxx"  # Optional: for higher API rate limits (5000/hr vs 60/hr)
 
 download:
-  mode: "git" # "zip" 或 "git"
-  save_path: "./repos" # 仓库存放的目录
-  target_ref: "master" # 默认拉取的分支或 Tag
-  keep_zip: false # ZIP 模式下解压后是否保留 ZIP 文件
+  mode: "git"              # "zip" (faster, no history) or "git" (with full git history)
+  save_path: "./repos"      # Directory to save repositories
+  target_ref: "main"        # Branch or Tag to checkout (e.g., main, master, v1.0)
+  keep_zip: false           # Keep ZIP file after extraction (ZIP mode only)
 
 filter:
-  language: "" # 语言筛选，示例: "Python"
-  min_stars: 0 # 最小星标数
-  updated_after: "" # 更新时间筛选，示例: "2023-01-01"
-  max_repos: 0 # 最大下载数量限制，0表示不限制
+  language: ""              # Filter by programming language (e.g., "Python", "JavaScript", "TypeScript")
+  min_stars: 0              # Minimum star count threshold (0 = no filter)
+  updated_after: ""          # Only include repos updated after this date (format: YYYY-MM-DD)
+  max_repos: 0              # Maximum number of repositories to download (0 = unlimited)
+  exclude: []               # Repository names to exclude from download (e.g., ["repo1", "repo2"])
 
 concurrency:
-  max_workers: 5 # 多线程并发数
+  max_workers: 5            # Number of concurrent download threads (recommended: 3-10)
 
 report:
-  format: "markdown" # "markdown" 或 "csv"
-  # output_dir: "./reports"      # 可选，报告输出目录
+  format: "markdown"        # Report format: "markdown", "csv", or "json"
+  output_dir: "./reports"   # Directory to save report files
+
+# Advanced options (CLI only, not in YAML):
+# --dry-run                 Preview what would be downloaded without actually downloading
+# --verbose                 Enable debug-level logging output
+# --version                 Show version number and exit
