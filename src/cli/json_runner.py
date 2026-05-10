@@ -99,7 +99,7 @@ def run_json(opts) -> int:
         emit_json({
             "status": "error",
             "error": "no_repositories",
-            "message": "No repositories matched the filters (or API request failed). Check app.log.",
+            "message": "No repositories matched the filters (or API request failed). Check logs/app.log.",
             "username": opts['username'],
             **({"agent_filter": agent_metadata} if agent_metadata else {}),
         })

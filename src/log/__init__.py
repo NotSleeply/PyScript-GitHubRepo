@@ -9,12 +9,13 @@ Exports:
 """
 
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 
 
 _ROOT_NAME = "RepoDownloader"
-_LOG_FILE = "app.log"
+_LOG_FILE = os.path.join("logs", "app.log")
 _FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
 _DATEFMT = "%Y-%m-%d %H:%M:%S"
 
@@ -32,7 +33,7 @@ def setup_logger(verbose: bool = False) -> logging.Logger:
     Idempotent: calling this multiple times does not stack handlers. Each call
     reflects the current `verbose` flag:
     - Sets level to DEBUG if verbose else INFO.
-    - Ensures exactly one RotatingFileHandler on app.log.
+    - Ensures exactly one RotatingFileHandler on logs/app.log.
     - Adds a StreamHandler(stdout) on the first verbose=True call; the handler
       is left in place on subsequent calls regardless of verbose (removing it
       would confuse long-running callers).
@@ -43,6 +44,9 @@ def setup_logger(verbose: bool = False) -> logging.Logger:
     formatter = logging.Formatter(_FORMAT, datefmt=_DATEFMT)
 
     if not _has_handler(logger, RotatingFileHandler):
+        log_dir = os.path.dirname(_LOG_FILE)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
         file_handler = RotatingFileHandler(
             _LOG_FILE,
             maxBytes=10 * 1024 * 1024,

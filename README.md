@@ -6,33 +6,118 @@
 [![GitHub Issues](https://img.shields.io/github/issues/NotSleeply/PyScript-GitHubRepo)](https://github.com/NotSleeply/PyScript-GitHubRepo/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/NotSleeply/PyScript-GitHubRepo?style=social)](https://github.com/NotSleeply/PyScript-GitHubRepo/stargazers)
 
-**Batch-clone or sync every public repository of a GitHub user/org from the command line — and from other agents.**
+**A CLI to batch-clone or sync every public repository from a GitHub user/org — designed to be driven by humans *and* by other agents.**
 
-A CLI-first Python tool with structured JSON output, an optional LLM-driven filter, and a [SKILL.md](./skill/SKILL.md) so other Claude Agent–style runners can drive it programmatically.
+Three things make this more than a one-off script:
+
+1. A **machine-readable JSON contract** (`--json`) so other tools can drive it programmatically.
+2. A **standard Claude Agent skill** ([`skill/SKILL.md`](./skill/SKILL.md)) so agent runners discover when and how to invoke it.
+3. An **optional LLM filter** (`--agent-filter`) that narrows the repo list with a natural-language prompt.
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
-- **🚀 Concurrent downloads** — configurable worker pool (default 5) pulls many repos in parallel.
-- **📦 Dual backend** — `git` mode clones with history via GitPython; `zip` mode is faster, auto-extracts, and removes the branch-suffix top-level dir.
+### Core capabilities
+
+- **🚀 Concurrent downloads** — configurable worker pool (default 5).
+- **📦 Dual backend** — `git` mode clones with full history; `zip` mode is faster, auto-extracts, and removes the branch-suffix top-level dir.
 - **🔍 Filters** — `--language`, `--min-stars`, `--updated-after`, `--max-repos`, `--exclude`.
-- **🤖 Optional LLM filter (`--agent-filter`)** — describe what you want in plain language, Claude narrows the list. See [🧠 Agent filter](#-agent-filter).
-- **🔀 Branch fallback** — if `--target-ref` doesn't exist, auto-falls back to the repo's default branch.
-- **♻️ Incremental sync** — `last_sync.json` in the target dir skips repos whose `updated_at` is unchanged.
-- **🛡️ Retry & fault tolerance** — tenacity-powered retries on transient errors; all failures logged to `app.log`.
-- **📊 Reports** — markdown / CSV / JSON summary of every run in `./reports/`.
-- **🎨 Two output modes** — pretty `rich` UI for humans, pure-JSON stream for agents (`--json`).
-- **⚡ Lazy imports** — `import main` adds ~4 MB RSS / 44 ms cold. Heavy deps (`requests`, `git`, `rich`, `tenacity`, `anthropic`) are loaded only when the code path needs them.
+- **🔀 Branch fallback** — if `--target-ref` doesn't exist, falls back to the repo's default branch.
+- **♻️ Incremental sync** — `last_sync.json` skips repos whose `updated_at` is unchanged.
+- **🛡️ Retry & fault tolerance** — tenacity-powered retries on transient errors. All failures recorded in `logs/app.log`.
+- **📊 Reports** — markdown / CSV / JSON summary in `./reports/` after every run.
+
+### Built for agents
+
+- **`--json`** — stdout becomes a single parseable JSON object; all UI/logs go to stderr. Exit codes 0/1/2 encode success / config-or-empty / partial failure.
+- **`skill/SKILL.md`** — Claude Agent skill descriptor with frontmatter, full schema, error codes, and typical agent workflows.
+- **`--agent-filter`** — pass a natural-language prompt; Claude narrows the candidate list. The model only sees public metadata (name, description, language, stars, `updated_at`) — never your token.
+
+### Performance & ergonomics
+
+- **⚡ Lazy imports** — `import main` adds ~5 MB / ~44 ms cold. Heavy deps (`requests`, `git`, `rich`, `tenacity`, `anthropic`) load only when the code path needs them.
+- **🎨 Two output modes** — pretty `rich` UI for humans, pure-JSON stream for agents.
+- **🪵 Per-layer logs** — child loggers (`RepoDownloader.github.api`, `RepoDownloader.core.processor`, …) make `--verbose` tail-able.
+
+## 🤖 Use as an agent skill
+
+Other agent runners can drive this CLI without humans in the loop. The contract:
+
+1. **Read `skill/SKILL.md`** — frontmatter (`name`, `description`) tells the agent when this skill applies; the body documents arguments, JSON schema, and exit codes.
+2. **Always pass `--json`** so stdout is parseable.
+3. **Trust exit codes** — `0` success/dry-run, `1` config or no-results, `2` partial failure.
+4. **Parse stdout once** — never grep stderr; that's a UX stream.
+
+```bash
+# Probe first with --dry-run to confirm the count and size are sensible
+out=$(uv run main.py --json --dry-run --username tiangolo --max-repos 5)
+echo "$out" | jq '.count, .estimated_size_mb'
+
+# Then run for real
+result=$(uv run main.py --json --username tiangolo --max-repos 5)
+case $? in
+  0) echo "$result" | jq '.stats' ;;
+  1) echo "$result" | jq '.error, .message' ;;
+  2) echo "$result" | jq '.failed' ;;
+esac
+```
+
+Full schema (success / partial / dry-run / error shapes) lives in [`skill/SKILL.md`](./skill/SKILL.md).
+
+## 🧠 Agent filter
+
+Narrow the repo list with a natural-language prompt via Claude — useful when the user wants something subjective ("the best CLI tools", "frameworks not apps").
+
+```bash
+uv pip install -e '.[agent]'           # install the optional anthropic SDK
+export ANTHROPIC_API_KEY=sk-...
+
+uv run main.py \
+  --username tiangolo --json \
+  --agent-filter "only CLI tools, not web frameworks" \
+  --max-repos 5
+```
+
+The JSON response gains an `agent_filter` block:
+
+```json
+{
+  "status": "ok",
+  "agent_filter": {
+    "prompt": "only CLI tools, not web frameworks",
+    "model": "claude-haiku-4-5-20251001",
+    "selected_count": 2,
+    "total_considered": 5,
+    "rationale": "Selected based on descriptions indicating CLI / terminal usage."
+  }
+}
+```
+
+Default model: `claude-haiku-4-5-20251001`. Override with `--agent-model`. Hard cap of 100 candidates per call. Hallucinated names (not in the candidate list) are dropped.
+
+## 📦 JSON contract
+
+```bash
+uv run main.py --json --username <target> [filters...]
+```
+
+| Code | Meaning |
+|---|---|
+| `0` | Success or dry-run |
+| `1` | Config error, no repos matched, or insufficient disk |
+| `2` | Partial failure — `failed[]` lists the repos that didn't make it |
+
+Error codes (in `error` field): `config_invalid`, `username_required`, `no_repositories`, `insufficient_disk_space`, `agent_missing_key`, `agent_sdk_missing`, `agent_invalid_response`. See [`skill/SKILL.md`](./skill/SKILL.md) for the full schema.
 
 ## 🚀 Quick Start
 
 ### 1. Install
 
 ```bash
-uv sync                          # install runtime deps
-uv pip install -e '.[dev]'       # + test tooling
-uv pip install -e '.[agent]'     # + the LLM filter (optional)
+uv sync                          # runtime deps
+uv pip install -e '.[dev]'       # + test tooling (optional)
+uv pip install -e '.[agent]'     # + LLM filter (optional)
 ```
 
 ### 2. Configure
@@ -42,7 +127,7 @@ cp config.example.yaml config.yaml
 # Edit config.yaml: set github.username and (recommended) github.token
 ```
 
-A GitHub token avoids the 60/hour unauthenticated rate limit — any classic PAT with the `public_repo` scope is enough.
+A GitHub token avoids the 60/hour unauthenticated rate limit — any classic PAT with `public_repo` is enough.
 
 ### 3. Run
 
@@ -57,63 +142,25 @@ uv run main.py --username tiangolo --dry-run --max-repos 5
 uv run main.py --username tiangolo --json --max-repos 5
 ```
 
-## 🤖 JSON mode
+## 🔧 CLI reference
 
-Add `--json` and `stdout` becomes a single parseable JSON object. All rich UI / progress / warnings go to `stderr`. Exit codes:
-
-| Code | Meaning |
-|---|---|
-| `0` | Success, or dry-run completed |
-| `1` | Config error, no repos matched, or insufficient disk space |
-| `2` | At least one repo failed (see `failed[]`) |
-
-Full schema and error codes are documented in [`skill/SKILL.md`](./skill/SKILL.md). Typical agent usage:
-
-```bash
-out=$(uv run main.py --username tiangolo --json --max-repos 3)
-echo "$out" | jq '.stats'
-echo "$out" | jq -r '.failed[]'
-```
-
-## 🧠 Agent filter
-
-Narrow the repo list with a natural-language prompt via Claude. Install the optional extra first:
-
-```bash
-uv pip install -e '.[agent]'
-export ANTHROPIC_API_KEY=sk-...
-```
-
-Then:
-
-```bash
-uv run main.py --username tiangolo --json --agent-filter "only CLI tools, not web frameworks"
-```
-
-The LLM sees only public metadata (name, description, language, stars, `updated_at`) — never your token. The JSON response gains an `agent_filter` field with prompt, model, rationale, and counts. Default model: `claude-haiku-4-5-20251001` (override with `--agent-model`).
-
-## 🔌 Use as a skill from another agent
-
-[`skill/SKILL.md`](./skill/SKILL.md) is a standard Claude Agent skill descriptor — drop the repo into a plugin path, another agent reads the frontmatter, and it knows when and how to invoke this tool. The contract is: always pass `--json`, read exit codes, parse stdout.
-
-## 🔧 Configuration
-
-CLI flags override YAML. See [`config.example.yaml`](config.example.yaml) for the full shape. Commonly used:
+CLI flags override YAML. See [`config.example.yaml`](config.example.yaml) for the full YAML shape.
 
 | Flag | Purpose | Default |
 |---|---|---|
-| `--username` | Required. Target user/org. | — |
-| `--token` | GitHub PAT. Strongly recommended. | from env |
+| `--username` | **Required.** Target user/org. | — |
+| `--token` | GitHub PAT (recommended). | from env / config |
 | `--mode` | `git` (with history) or `zip` (faster). | `git` |
 | `--save-path` | Where to write repos. | `./repos` |
 | `--target-ref` | Branch/tag; falls back to default branch on 404. | `main` |
 | `--language` / `--min-stars` / `--updated-after` / `--max-repos` / `--exclude` | Traditional filters. | — |
-| `--agent-filter` | LLM filter (optional extra). | off |
 | `--max-workers` | Thread pool size. 3–10 recommended. | `5` |
+| `--agent-filter` | LLM filter (needs `[agent]` extra). | off |
+| `--agent-model` | Claude model for `--agent-filter`. | `claude-haiku-4-5-20251001` |
 | `--report-format` | `markdown` / `csv` / `json`. | `markdown` |
 | `--json` | Structured stdout for agents. | off |
 | `--dry-run` | Preview, no downloads. | off |
-| `--verbose` | Debug-level logging to stderr + `app.log`. | off |
+| `--verbose` | Debug-level logging to stderr + `logs/app.log`. | off |
 
 ## 🛠️ Architecture
 
@@ -128,7 +175,7 @@ src/
 └── agent/        optional — LLM-driven filter (needs `anthropic` extra)
 ```
 
-Each layer only depends on layers below it: `cli → core → (github, reports) → (config, log)`. Heavy third-party deps are imported lazily so that `--help`, `--version`, and pure-JSON error paths stay fast.
+Each layer only depends on layers below it: `cli → core → (github, reports) → (config, log)`. Heavy third-party deps are imported lazily so `--help`, `--version`, and pure-JSON error paths stay fast.
 
 Old flat paths (`src.api`, `src.downloader`, `src.history_report`, `src.logger`, `src.github_repo_downloader`) still work as re-export shims for backward compatibility.
 
