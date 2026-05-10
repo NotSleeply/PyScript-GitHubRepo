@@ -93,7 +93,7 @@ def test_config_module_imports_without_yaml():
     probe = (
         "import sys\n"
         "from src import config\n"  # noqa: F401
-        "print(f'yaml={'yaml' in sys.modules}')\n"
+        "print('yaml=', 'yaml' in sys.modules)\n"
     )
     out = _run_probe(probe)
     assert out["yaml"] == "False"
@@ -104,7 +104,7 @@ def test_api_module_imports_without_requests():
     probe = (
         "import sys\n"
         "from src import api\n"  # noqa: F401
-        "print(f'requests={'requests' in sys.modules}')\n"
+        "print('requests=', 'requests' in sys.modules)\n"
     )
     out = _run_probe(probe)
     assert out["requests"] == "False"
