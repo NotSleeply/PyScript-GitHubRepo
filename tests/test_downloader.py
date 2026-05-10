@@ -25,6 +25,18 @@ from src.downloader import (
 )
 
 
+def _create_test_zip(repo_name, branch_suffix=''):
+    """Build an in-memory zip whose top-level dir is `{repo_name}{branch_suffix}`,
+    mimicking what github.com/.../archive/refs/heads/<ref>.zip returns."""
+    buffer = BytesIO()
+    top_level = f"{repo_name}{branch_suffix}"
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(f"{top_level}/README.md", f"# {repo_name}\n")
+        zf.writestr(f"{top_level}/main.py", "print('Hello')\n")
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
 class TestRetryableErrors:
     """Test suite for custom exception classes."""
     
@@ -44,12 +56,12 @@ class TestRetryableErrors:
 class TestZipDownload:
     """Test suite for ZIP download mode."""
     
-    @patch('src.downloader.requests.get')
+    @patch('requests.get')
     def test_successful_zip_download(self, mock_get, sample_repo_data, temp_dir, mock_progress_bar):
         """Test successful ZIP file download and extraction."""
         progress, task_id = mock_progress_bar
         
-        zip_content = self._create_test_zip(sample_repo_data['name'])
+        zip_content = _create_test_zip(sample_repo_data['name'])
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.headers = {'content-length': str(len(zip_content))}
@@ -70,12 +82,12 @@ class TestZipDownload:
         extracted_path = os.path.join(temp_dir, sample_repo_data['name'])
         assert os.path.exists(extracted_path)
     
-    @patch('src.downloader.requests.get')
+    @patch('requests.get')
     def test_branch_fallback_on_404(self, mock_get, sample_repo_data, temp_dir, mock_progress_bar):
         """Test fallback to default branch when target branch not found."""
         progress, task_id = mock_progress_bar
         
-        zip_content_main = self._create_test_zip(sample_repo_data['name'])
+        zip_content_main = _create_test_zip(sample_repo_data['name'])
         
         response_not_found = MagicMock()
         response_not_found.status_code = 404
@@ -100,12 +112,12 @@ class TestZipDownload:
         
         assert result == "Success"
     
-    @patch('src.downloader.requests.get')
+    @patch('requests.get')
     def test_keep_zip_option(self, mock_get, sample_repo_data, temp_dir, mock_progress_bar):
         """Test that --keep-zip preserves the ZIP file."""
         progress, task_id = mock_progress_bar
         
-        zip_content = self._create_test_zip(sample_repo_data['name'])
+        zip_content = _create_test_zip(sample_repo_data['name'])
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.headers = {'content-length': str(len(zip_content))}
@@ -125,12 +137,12 @@ class TestZipDownload:
         zip_path = os.path.join(temp_dir, f"{sample_repo_data['name']}.zip")
         assert os.path.exists(zip_path)
     
-    @patch('src.downloader.requests.get')
+    @patch('requests.get')
     def test_token_in_download_headers(self, mock_get, sample_repo_data, temp_dir, mock_progress_bar):
         """Test that authentication token is included in download request."""
         progress, task_id = mock_progress_bar
         
-        zip_content = self._create_test_zip(sample_repo_data['name'])
+        zip_content = _create_test_zip(sample_repo_data['name'])
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.headers = {'content-length': str(len(zip_content))}
@@ -151,12 +163,12 @@ class TestZipDownload:
         headers = call_kwargs.get('headers', {})
         assert 'Authorization' in headers
     
-    @patch('src.downloader.requests.get')
+    @patch('requests.get')
     def test_server_error_triggers_retry(self, mock_get, sample_repo_data, temp_dir, mock_progress_bar):
         """Test that 5xx server errors trigger retry mechanism."""
         progress, task_id = mock_progress_bar
         
-        zip_content = self._create_test_zip(sample_repo_data['name'])
+        zip_content = _create_test_zip(sample_repo_data['name'])
         
         error_response = MagicMock()
         error_response.status_code = 502
@@ -184,13 +196,13 @@ class TestZipDownload:
         assert result == "Success"
         assert mock_get.call_count == 3
     
-    @patch('src.downloader.requests.get')
+    @patch('requests.get')
     def test_extracts_and_renames_correctly(self, mock_get, sample_repo_data, temp_dir, mock_progress_bar):
         """Test that ZIP is extracted and renamed properly (removes branch suffix)."""
         progress, task_id = mock_progress_bar
         
         repo_name = sample_repo_data['name']
-        zip_content = self._create_test_zip(repo_name, branch_suffix='-main')
+        zip_content = _create_test_zip(repo_name, branch_suffix='-main')
         
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -218,7 +230,7 @@ class TestZipDownload:
 class TestGitClone:
     """Test suite for Git clone mode."""
     
-    @patch('src.downloader.Repo')
+    @patch('git.Repo')
     def test_fresh_clone_new_repository(self, MockRepoClass, sample_repo_data, temp_dir, mock_progress_bar):
         """Test cloning a repository that doesn't exist locally yet."""
         progress, task_id = mock_progress_bar
@@ -240,7 +252,7 @@ class TestGitClone:
         assert result == "Success"
         MockRepoClass.clone_from.assert_called_once()
     
-    @patch('src.downloader.Repo')
+    @patch('git.Repo')
     def test_pull_existing_repository(self, MockRepoClass, sample_repo_data, temp_dir, mock_progress_bar):
         """Test pulling updates for an existing local repository."""
         progress, task_id = mock_progress_bar
@@ -263,7 +275,7 @@ class TestGitClone:
         assert result == "Success"
         mock_origin.pull.assert_called_once()
     
-    @patch('src.downloader.Repo')
+    @patch('git.Repo')
     def test_branch_checkout_after_pull(self, MockRepoClass, sample_repo_data, temp_dir, mock_progress_bar):
         """Test checking out specific branch after pulling."""
         progress, task_id = mock_progress_bar
@@ -284,7 +296,7 @@ class TestGitClone:
         
         mock_git_repo.git.checkout.assert_called_with('develop')
     
-    @patch('src.downloader.Repo')
+    @patch('git.Repo')
     def test_branch_fallback_on_clone_failure(self, MockRepoClass, sample_repo_data, temp_dir, mock_progress_bar):
         """Test falling back to default branch when target branch clone fails."""
         from git.exc import GitCommandError
@@ -311,7 +323,7 @@ class TestGitClone:
         assert result == "Success"
         assert MockRepoClass.clone_from.call_count == 2
     
-    @patch('src.downloader.Repo')
+    @patch('git.Repo')
     def test_token_embedded_in_clone_url(self, MockRepoClass, sample_repo_data, temp_dir, mock_progress_bar):
         """Test that token is embedded in HTTPS clone URL for authentication."""
         progress, task_id = mock_progress_bar
@@ -336,15 +348,5 @@ class TestGitClone:
 
 class TestDownloaderEdgeCases:
     """Edge case testing for downloader functions."""
-    
-    def _create_test_zip(self, repo_name, branch_suffix=''):
-        """Helper method to create a valid ZIP file for testing."""
-        buffer = BytesIO()
-        top_level = f"{repo_name}{branch_suffix}"
-        
-        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr(f"{top_level}/README.md", f"# {repo_name}\n")
-            zf.writestr(f"{top_level}/main.py", "print('Hello')\n")
-        
-        buffer.seek(0)
-        return buffer.getvalue()
+    pass
+
