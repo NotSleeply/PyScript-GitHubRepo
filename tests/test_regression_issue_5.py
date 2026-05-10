@@ -45,16 +45,26 @@ def _run_cli(args, extra_env=None, timeout=30):
 
 
 def _write_stub_api(tmp_path, repos):
-    """Create a stub `src/api.py` that returns a fixed list, via a sitecustomize
-    shim loaded before main.py imports it."""
+    """Create a stub that replaces `src.github.api` (the real source of
+    get_repos after the Issue #7 refactor) via sitecustomize + PYTHONPATH.
+
+    Also patches `src.api`, the back-compat shim, so tests that import
+    through the old path keep working.
+    """
     stub = tmp_path / "sitecustomize.py"
     payload = json.dumps(repos)
     stub.write_text(textwrap.dedent(f"""
         import sys, json
         import types as _types
 
+        _repos = json.loads({payload!r})
+
+        _fake_gh_api = _types.ModuleType('src.github.api')
+        _fake_gh_api.get_repos = lambda *a, **kw: _repos
+        sys.modules['src.github.api'] = _fake_gh_api
+
         _fake_api = _types.ModuleType('src.api')
-        _fake_api.get_repos = lambda *a, **kw: json.loads({payload!r})
+        _fake_api.get_repos = lambda *a, **kw: _repos
         sys.modules['src.api'] = _fake_api
     """), encoding='utf-8')
     return stub

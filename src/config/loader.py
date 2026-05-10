@@ -1,53 +1,21 @@
-import os
+"""YAML loading and CLI merging.
+
+Both `yaml` and the argparse setup are deferred until they are actually
+needed, preserving the lazy-import guarantee from Issue #3.
+"""
+
 import argparse
-import re
+import os
 import sys
-from datetime import datetime
-from src.logger import logger
 
+from src.config.validator import validate_config
+from src.log import get_logger
 
-def validate_config(opts):
-    """Validate configuration options and return list of errors/warnings"""
-    errors = []
-    warnings = []
-    
-    if not opts.get('username'):
-        errors.append("Username is required")
-    else:
-        if not re.match(r'^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$', opts['username']):
-            warnings.append(f"Username '{opts['username']}' may not be valid")
-    
-    max_workers = opts.get('max_workers', 5)
-    if max_workers < 1:
-        errors.append("max_workers must be at least 1")
-    elif max_workers > 50:
-        warnings.append(f"max_workers={max_workers} is very high, may trigger rate limiting")
-
-    if opts.get('max_repos', 0) < 0:
-        errors.append("max_repos cannot be negative")
-
-    if opts.get('min_stars', 0) < 0:
-        errors.append("min_stars cannot be negative")
-
-    mode = opts.get('mode', 'git')
-    if mode not in ['git', 'zip']:
-        errors.append(f"Invalid mode: {mode}")
-    
-    save_path = opts.get('save_path', './repos')
-    if len(save_path) > 255:
-        errors.append("save_path is too long (>255 characters)")
-    
-    if opts.get('updated_after'):
-        try:
-            datetime.strptime(opts['updated_after'], "%Y-%m-%d")
-        except ValueError:
-            errors.append(f"Invalid date format for updated_after: {opts['updated_after']}. Use YYYY-MM-DD")
-    
-    return errors, warnings
+logger = get_logger("config")
 
 
 def load_config(config_path):
-    import yaml
+    import yaml  # lazy
 
     if os.path.exists(config_path):
         try:
@@ -67,7 +35,7 @@ def load_config(config_path):
         return {}
 
 
-def parse_and_merge_args():
+def _build_parser():
     parser = argparse.ArgumentParser(
         description="GitHub Repo Downloader - Batch download/sync repositories",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -76,9 +44,9 @@ Examples:
   %(prog)s --username octocat --language Python --min-stars 100
   %(prog)s --config myconfig.yaml --mode zip --max-repos 10
   %(prog)s --username tiangolo --dry-run  # Preview without downloading
-        """
+        """,
     )
-    
+
     parser.add_argument("--config", default="config.yaml", help="Configuration file path (default: config.yaml)")
     parser.add_argument("--username", help="GitHub username or organization name")
     parser.add_argument("--token", help="GitHub Personal Access Token (optional but recommended)")
@@ -96,18 +64,28 @@ Examples:
     parser.add_argument("--report-dir", help="Report output directory")
     parser.add_argument("--dry-run", action='store_true', help="Preview what would be downloaded without actually downloading")
     parser.add_argument("--verbose", action='store_true', help="Enable verbose/debug logging")
-    parser.add_argument("--json", action='store_true', dest='json_output', help="Emit machine-readable JSON on stdout (for agent/skill use); rich UI is suppressed")
+    parser.add_argument(
+        "--json",
+        action='store_true',
+        dest='json_output',
+        help="Emit machine-readable JSON on stdout (for agent/skill use); rich UI is suppressed",
+    )
     parser.add_argument("-v", "--version", action='version', version='%(prog)s 0.1.0')
-    
+
+    return parser
+
+
+def parse_and_merge_args():
+    parser = _build_parser()
     args = parser.parse_args()
     config = load_config(args.config)
-    
+
     c_github = config.get('github', {})
     c_dw = config.get('download', {})
     c_filter = config.get('filter', {})
     c_conc = config.get('concurrency', {})
     c_repo = config.get('report', {})
-    
+
     opts = {
         "username": args.username or c_github.get('username'),
         "token": args.token or c_github.get('token'),
@@ -139,5 +117,5 @@ Examples:
     if warnings and opts['verbose']:
         for warning in warnings:
             print(f"[WARNING] {warning}", file=sys.stderr)
-    
+
     return opts
