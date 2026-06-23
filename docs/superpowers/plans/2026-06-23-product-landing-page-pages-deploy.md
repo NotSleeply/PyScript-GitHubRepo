@@ -1,0 +1,398 @@
+# Product Landing Page and GitHub Pages Deployment Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Create a product landing page in `public/index.html` and setup a GitHub Actions workflow in `.github/workflows/deploy-pages.yml` to deploy it to GitHub Pages securely and isolated.
+
+**Architecture:** A static HTML single-page introduction using Tailwind CSS (via CDN) for styling. The deployment utilizes official Actions (`actions/configure-pages`, `actions/upload-pages-artifact`, and `actions/deploy-pages`) running under a workflow triggered by changes to the `public/` directory.
+
+**Tech Stack:** HTML5, CSS3, Tailwind CSS (via Play CDN), Google Fonts (Inter), GitHub Actions.
+
+## Global Constraints
+* The landing page must be placed inside the `public/` directory in the root of the project.
+* The GitHub Pages deployment must not affect other projects' GitHub Pages.
+* Styling must be clean, modern, and developer-focused (dark theme).
+
+---
+
+### Task 1: Create the Landing Page HTML File
+
+**Files:**
+- Create: `public/index.html`
+
+**Interfaces:**
+- Consumes: None
+- Produces: Static landing page served at root index.html
+
+- [ ] **Step 1: Write the minimal HTML file structure**
+
+Create the file `public/index.html` with basic structure, Tailwind Play CDN, Google Font, and a header/hero section:
+
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyScript-GitHubRepo | Batch Download & Sync GitHub Repositories</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Tailwind Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- Header -->
+    <header class="border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-cyan-500/10 p-2 rounded-lg border border-cyan-500/30">
+                    <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                </div>
+                <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">PyScript-GitHubRepo</span>
+            </div>
+            <a href="https://github.com/NotSleeply/PyScript-GitHubRepo" class="text-sm font-medium text-slate-400 hover:text-white transition flex items-center space-x-1.5" target="_blank" rel="noopener noreferrer">
+                <span>View on GitHub</span>
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.646.64.699 1.026 1.592 1.026 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.162 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        <!-- Hero Section -->
+        <section class="max-w-6xl mx-auto px-4 py-20 text-center">
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent mb-6">
+                Batch Download & Sync GitHub Repositories at Scale
+            </h1>
+            <p class="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed">
+                A modern, high-performance Python CLI tool for cloning or archiving GitHub repositories concurrently with advanced language, star, and recency filtering.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-16">
+                <a href="#quickstart" class="w-full sm:w-auto px-8 py-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-lg shadow-lg hover:shadow-cyan-500/20 transition duration-150">
+                    Get Started
+                </a>
+                <a href="#features" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-semibold rounded-lg transition duration-150">
+                    Explore Features
+                </a>
+            </div>
+
+            <!-- Terminal Mockup -->
+            <div class="max-w-4xl mx-auto rounded-xl border border-slate-800 bg-slate-900/40 p-1.5 shadow-2xl backdrop-blur-sm">
+                <div class="rounded-lg bg-slate-950 p-6 text-left font-mono text-sm leading-relaxed overflow-x-auto text-slate-300">
+                    <div class="flex items-center space-x-2 border-b border-slate-900 pb-4 mb-4">
+                        <span class="w-3.5 h-3.5 rounded-full bg-red-500/30 border border-red-500/50"></span>
+                        <span class="w-3.5 h-3.5 rounded-full bg-yellow-500/30 border border-yellow-500/50"></span>
+                        <span class="w-3.5 h-3.5 rounded-full bg-green-500/30 border border-green-500/50"></span>
+                        <span class="text-xs text-slate-500 ml-2 font-sans select-none">bash - uv run main.py</span>
+                    </div>
+                    <p class="text-slate-500 mb-2">$ uv run main.py --username tiangolo --max-workers 5 --min-stars 100 --language Python</p>
+                    <p class="text-cyan-400 font-semibold mb-2">🚀 PyScript-GitHubRepo v0.2.0</p>
+                    <p class="text-slate-400 mb-2">User: tiangolo | Token: *** | Mode: zip</p>
+                    <p class="text-slate-400 mb-4">🔍 Fetching repositories for: tiangolo...</p>
+                    <p class="text-emerald-400 font-semibold mb-4">✅ Found 12 repositories matching criteria.</p>
+                    <div class="space-y-1 mb-4 text-slate-400">
+                        <p>📥 Starting download to: D:\Code\PyScript-GitHubRepo\repos</p>
+                        <p>   Concurrency: 5 threads</p>
+                    </div>
+                    <div class="space-y-1 mb-4">
+                        <p class="text-slate-400">✅ Completed fastapi [====================] 100%</p>
+                        <p class="text-slate-400">✅ Completed sqlmodel [====================] 100%</p>
+                        <p class="text-slate-400">⏭️ Skipped tyro (No update) [====================] 100%</p>
+                    </div>
+                    <p class="text-slate-500">============================================================</p>
+                    <p class="text-emerald-400 font-bold mb-1">✨ Sync Completed!</p>
+                    <div class="grid grid-cols-2 gap-2 text-slate-400 max-w-sm">
+                        <div>⏱️ Duration:</div><div class="font-semibold text-slate-200">12.34 seconds</div>
+                        <div>✅ Success:</div><div class="font-semibold text-slate-200">11 (91.7%)</div>
+                        <div>⏭️ Skipped:</div><div class="font-semibold text-slate-200">1</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
+```
+
+- [ ] **Step 2: Add full contents to index.html (Features, Getting Started, and Config)**
+
+Complete the `public/index.html` structure by adding sections for **Features Grid**, **Quick Start / Usage**, and a **Footer**. Append them inside `<main>` and before `</body>`.
+
+```html
+        <!-- Features Section -->
+        <section id="features" class="border-t border-slate-900 bg-slate-950/40 py-24">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl mb-4">
+                        Engineered for Velocity & Flexibility
+                    </h2>
+                    <p class="text-slate-400">
+                        Designed to handle high concurrency while keeping rate limits and bandwidth footprint minimal.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="border border-slate-900 rounded-xl p-6 bg-slate-950/60 hover:border-slate-800 transition duration-150">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white mb-2">High Concurrency</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Parallel downloads using configurable thread pools. Synchronizes hundreds of repositories in seconds.
+                        </p>
+                    </div>
+                    <!-- Feature 2 -->
+                    <div class="border border-slate-900 rounded-xl p-6 bg-slate-950/60 hover:border-slate-800 transition duration-150">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2"/></svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white mb-2">Dual-Mode Download</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Support for <code>git clone</code> (retains commit history) or lightweight <code>zip</code> archiving (fastest download, low disk usage).
+                        </p>
+                    </div>
+                    <!-- Feature 3 -->
+                    <div class="border border-slate-900 rounded-xl p-6 bg-slate-950/60 hover:border-slate-800 transition duration-150">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white mb-2">Metadata Filtering</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Filter target repositories locally by primary programming language, star threshold, and last updated timestamps.
+                        </p>
+                    </div>
+                    <!-- Feature 4 -->
+                    <div class="border border-slate-900 rounded-xl p-6 bg-slate-950/60 hover:border-slate-800 transition duration-150">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white mb-2">Automated Reports</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Generates unified summary logs and formatted reports in Markdown, CSV, or structured JSON configurations automatically.
+                        </p>
+                    </div>
+                    <!-- Feature 5 -->
+                    <div class="border border-slate-900 rounded-xl p-6 bg-slate-950/60 hover:border-slate-800 transition duration-150">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white mb-2">Incremental Sync</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Smart state checks query local metadata sync logs to skip redundant downloads of unmodified repositories.
+                        </p>
+                    </div>
+                    <!-- Feature 6 -->
+                    <div class="border border-slate-900 rounded-xl p-6 bg-slate-950/60 hover:border-slate-800 transition duration-150">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white mb-2">Agent & CLI-First</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Supports standardized <code>--json</code> mode pipelines and reliable exit codes suited for orchestration engines.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quickstart / Code Section -->
+        <section id="quickstart" class="max-w-6xl mx-auto px-4 py-24">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                <!-- Text / Instructions -->
+                <div>
+                    <h2 class="text-3xl font-extrabold tracking-tight text-white mb-6">
+                        Get Started in Seconds
+                    </h2>
+                    <p class="text-slate-400 mb-8 leading-relaxed">
+                        PyScript-GitHubRepo requires Python 3.11+. The easiest way to get started is using Astral's <code>uv</code> runner, which automates environment creation and fetches dependencies instantly.
+                    </p>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0 bg-slate-900 w-8 h-8 rounded-full border border-slate-800 flex items-center justify-center text-cyan-400 font-bold text-sm">
+                                1
+                            </div>
+                            <div>
+                                <h4 class="text-white font-medium mb-1">Cloning the repository</h4>
+                                <pre class="bg-slate-950 border border-slate-900 rounded p-3 font-mono text-xs text-slate-300 mt-2">git clone https://github.com/NotSleeply/PyScript-GitHubRepo.git
+cd PyScript-GitHubRepo</pre>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0 bg-slate-900 w-8 h-8 rounded-full border border-slate-800 flex items-center justify-center text-cyan-400 font-bold text-sm">
+                                2
+                            </div>
+                            <div>
+                                <h4 class="text-white font-medium mb-1">Installing dependencies</h4>
+                                <pre class="bg-slate-950 border border-slate-900 rounded p-3 font-mono text-xs text-slate-300 mt-2">uv pip install -e .</pre>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0 bg-slate-900 w-8 h-8 rounded-full border border-slate-800 flex items-center justify-center text-cyan-400 font-bold text-sm">
+                                3
+                            </div>
+                            <div>
+                                <h4 class="text-white font-medium mb-1">Running a query</h4>
+                                <pre class="bg-slate-950 border border-slate-900 rounded p-3 font-mono text-xs text-slate-300 mt-2">uv run main.py --username tiangolo --limit 5</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Config Box -->
+                <div class="flex flex-col justify-center">
+                    <div class="border border-slate-900 rounded-xl bg-slate-950 p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                            <span class="mr-2 text-cyan-400">⚙️</span> Config File Example (config.yaml)
+                        </h3>
+                        <pre class="font-mono text-xs text-slate-400 overflow-x-auto bg-slate-900/50 p-4 rounded-lg border border-slate-900/80 leading-relaxed">
+<span class="text-cyan-400">github:</span>
+  <span class="text-slate-300">username:</span> <span class="text-emerald-400">"octocat"</span>
+  <span class="text-slate-300">token:</span> <span class="text-emerald-400">"ghp_yourpersonalaccesstoken"</span>
+
+<span class="text-cyan-400">download:</span>
+  <span class="text-slate-300">mode:</span> <span class="text-emerald-400">"zip"</span>          <span class="text-slate-500"># "git" or "zip"</span>
+  <span class="text-slate-300">save_path:</span> <span class="text-emerald-400">"./repos"</span>
+  <span class="text-slate-300">target_ref:</span> <span class="text-emerald-400">"main"</span>     <span class="text-slate-500"># target branch/tag</span>
+
+<span class="text-cyan-400">filter:</span>
+  <span class="text-slate-300">language:</span> <span class="text-emerald-400">"Python"</span>
+  <span class="text-slate-300">min_stars:</span> <span class="text-emerald-400">100</span>
+  <span class="text-slate-300">max_repos:</span> <span class="text-emerald-400">50</span>
+
+<span class="text-cyan-400">concurrency:</span>
+  <span class="text-slate-300">max_workers:</span> <span class="text-emerald-400">5</span>        <span class="text-slate-500"># thread limit</span>
+                        </pre>
+                        <p class="text-slate-500 text-xs mt-3 leading-relaxed">
+                            Pass config location to CLI via <code>--config config.yaml</code>. Any command line arguments take priority over YAML keys.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="border-t border-slate-900 py-12 bg-slate-950">
+            <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
+                <span class="text-slate-500 text-sm">
+                    &copy; 2026 PyScript-GitHubRepo. Released under the MIT License.
+                </span>
+                <span class="text-slate-500 text-sm mt-4 md:mt-0">
+                    Developed by <a href="https://github.com/NotSleeply" class="text-slate-400 hover:text-white" target="_blank">NotSleeply</a> and open-source contributors.
+                </span>
+            </div>
+        </footer>
+```
+
+- [ ] **Step 3: Preview local index.html**
+
+Verify index.html is valid by checking it contains key elements. Since it's HTML, we don't have a unit test for it, but we can verify it contains standard elements.
+Expected: File `public/index.html` has size > 5000 bytes, and starts with `<!DOCTYPE html>`.
+
+- [ ] **Step 4: Commit public/index.html**
+
+```bash
+git add public/index.html
+git commit -m "feat: add product landing page public/index.html"
+```
+
+---
+
+### Task 2: Create the GitHub Pages Actions Workflow
+
+**Files:**
+- Create: `.github/workflows/deploy-pages.yml`
+
+**Interfaces:**
+- Consumes: Static files in `public/` directory
+- Produces: Deployed site at GitHub Pages
+
+- [ ] **Step 1: Write the Actions Workflow file**
+
+Create the file `.github/workflows/deploy-pages.yml` with workflow triggers, permissions, and deployment steps:
+
+```yaml
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+- [ ] **Step 2: Commit deploy-pages.yml**
+
+```bash
+git add .github/workflows/deploy-pages.yml
+git commit -m "ci: add GitHub Pages deployment workflow"
+```
+
+---
+
+## Execution Handoff
+
+Plan complete and saved to `docs/superpowers/plans/2026-06-23-product-landing-page-pages-deploy.md`. Two execution options:
+
+**1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration.
+
+**2. Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints.
+
+Which approach? (We will use Inline Execution).
