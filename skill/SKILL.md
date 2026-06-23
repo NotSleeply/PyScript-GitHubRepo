@@ -34,11 +34,11 @@ uv run main.py --json --username <target> [filters...] [--dry-run]
 
 **Exit codes:**
 
-| Code | Meaning |
-|------|---------|
-| `0` | All downloads succeeded, or dry-run completed |
-| `1` | Configuration error, no repositories matched, or insufficient disk space — nothing was downloaded |
-| `2` | At least one repo failed; the JSON's `failed` array lists them |
+| Code | Meaning                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------- |
+| `0`  | All downloads succeeded, or dry-run completed                                                     |
+| `1`  | Configuration error, no repositories matched, or insufficient disk space — nothing was downloaded |
+| `2`  | At least one repo failed; the JSON's `failed` array lists them                                    |
 
 ### Human mode (default)
 
@@ -50,25 +50,25 @@ Emits a rich progress UI and a Markdown/CSV summary report. Don't parse its stdo
 
 ## Arguments
 
-| Flag | Purpose | Example |
-|---|---|---|
-| `--username` | **Required.** GitHub user or org to enumerate | `--username tiangolo` |
-| `--token` | GitHub Personal Access Token (strongly recommended) | `--token ghp_xxx` |
-| `--mode` | `git` (clone with history) or `zip` (faster, no history) | `--mode git` |
-| `--save-path` | Where to put repos | `--save-path ./repos` |
-| `--target-ref` | Branch or tag to checkout; falls back to default branch | `--target-ref main` |
-| `--language` | Filter by primary language | `--language Python` |
-| `--min-stars` | Floor on star count | `--min-stars 50` |
-| `--updated-after` | Only repos updated on/after `YYYY-MM-DD` | `--updated-after 2025-01-01` |
-| `--max-repos` | Cap the number of repos (0 = unlimited) | `--max-repos 10` |
-| `--exclude` | Space-separated repo names to skip | `--exclude foo bar` |
-| `--max-workers` | Concurrent threads (recommended 3–10) | `--max-workers 5` |
-| `--dry-run` | Preview matches, do not download | `--dry-run` |
-| `--json` | Structured output for agents | `--json` |
-| `--config` | Path to YAML config with defaults | `--config config.yaml` |
-| `--agent-filter` | Natural-language filter via Claude (optional) | `--agent-filter "best CLI tools"` |
-| `--agent-model` | Claude model for `--agent-filter` | `--agent-model claude-haiku-4-5-20251001` |
-| `--agent-api-key` | API key for `--agent-filter` (or `ANTHROPIC_API_KEY` env) | |
+| Flag              | Purpose                                                   | Example                                   |
+| ----------------- | --------------------------------------------------------- | ----------------------------------------- |
+| `--username`      | **Required.** GitHub user or org to enumerate             | `--username tiangolo`                     |
+| `--token`         | GitHub Personal Access Token (strongly recommended)       | `--token ghp_xxx`                         |
+| `--mode`          | `git` (clone with history) or `zip` (faster, no history)  | `--mode git`                              |
+| `--save-path`     | Where to put repos                                        | `--save-path ./repos`                     |
+| `--target-ref`    | Branch or tag to checkout; falls back to default branch   | `--target-ref main`                       |
+| `--language`      | Filter by primary language                                | `--language Python`                       |
+| `--min-stars`     | Floor on star count                                       | `--min-stars 50`                          |
+| `--updated-after` | Only repos updated on/after `YYYY-MM-DD`                  | `--updated-after 2025-01-01`              |
+| `--max-repos`     | Cap the number of repos (0 = unlimited)                   | `--max-repos 10`                          |
+| `--exclude`       | Space-separated repo names to skip                        | `--exclude foo bar`                       |
+| `--max-workers`   | Concurrent threads (recommended 3–10)                     | `--max-workers 5`                         |
+| `--dry-run`       | Preview matches, do not download                          | `--dry-run`                               |
+| `--json`          | Structured output for agents                              | `--json`                                  |
+| `--config`        | Path to YAML config with defaults                         | `--config config.yaml`                    |
+| `--agent-filter`  | Natural-language filter via Claude (optional)             | `--agent-filter "best CLI tools"`         |
+| `--agent-model`   | Claude model for `--agent-filter`                         | `--agent-model claude-haiku-4-5-20251001` |
+| `--agent-api-key` | API key for `--agent-filter` (or `ANTHROPIC_API_KEY` env) |                                           |
 
 CLI flags override the equivalent YAML keys. See `config.example.yaml` for the YAML layout.
 
@@ -77,10 +77,12 @@ CLI flags override the equivalent YAML keys. See `config.example.yaml` for the Y
 Optional feature. After traditional filters (language/stars/date/excludes) run, the remaining repos can be narrowed further with a natural-language prompt. Useful when the user asks for something subjective ("best CLI tools", "frameworks, not apps", "repos that would help learning Rust").
 
 Requirements:
+
 - `uv pip install anthropic` (or install the `agent` extra: `uv pip install -e '.[agent]'`)
 - Set `ANTHROPIC_API_KEY` or pass `--agent-api-key`
 
 Behavior:
+
 - The model sees only public metadata — name, description, language, stars, updated_at. Never the token or file content.
 - Default model: `claude-haiku-4-5-20251001`. Override with `--agent-model`.
 - Hard cap of 100 candidates sent to the model. If traditional filters leave more, narrow them first (e.g. raise `--min-stars`).
@@ -110,7 +112,7 @@ New error codes for agent failures: `agent_missing_key`, `agent_sdk_missing`, `a
 
 ```json
 {
-  "status": "ok",                   // "ok" | "partial"
+  "status": "ok", // "ok" | "partial"
   "username": "octocat",
   "mode": "git",
   "save_path": "/abs/path/to/repos",
@@ -126,7 +128,7 @@ New error codes for agent failures: `agent_missing_key`, `agent_sdk_missing`, `a
   "repositories": [
     {
       "name": "repo-a",
-      "status": "success",          // "success" | "failed" | "skipped" | "interrupted"
+      "status": "success", // "success" | "failed" | "skipped" | "interrupted"
       "language": "Python",
       "stars": 42,
       "updated_at": "2026-04-01T12:00:00Z",
@@ -153,7 +155,14 @@ New error codes for agent failures: `agent_missing_key`, `agent_sdk_missing`, `a
   "estimated_size_mb": 12.34,
   "save_path": "/abs/path/to/repos",
   "repositories": [
-    { "name": "...", "language": "...", "stars": 0, "updated_at": "...", "size_kb": 0, "description": "..." }
+    {
+      "name": "...",
+      "language": "...",
+      "stars": 0,
+      "updated_at": "...",
+      "size_kb": 0,
+      "description": "..."
+    }
   ]
 }
 ```

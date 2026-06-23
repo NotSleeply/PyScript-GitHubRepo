@@ -18,7 +18,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-from src.history_report import (
+from src.reports import (
     check_disk_space,
     load_sync_history,
     save_sync_history,

@@ -177,7 +177,7 @@ src/
 
 Each layer only depends on layers below it: `cli → core → (github, reports) → (config, log)`. Heavy third-party deps are imported lazily so `--help`, `--version`, and pure-JSON error paths stay fast.
 
-Old flat paths (`src.api`, `src.downloader`, `src.history_report`, `src.logger`, `src.github_repo_downloader`) still work as re-export shims for backward compatibility.
+Old flat paths (`src.downloader`, `src.history_report`, `src.logger`, `src.github_repo_downloader`) still work as re-export shims for backward compatibility.
 
 ## 🧪 Tests
 

@@ -40,7 +40,7 @@ CI runs on every PR, and docs match reality.
 
 ### Backward compatibility
 
-- Old flat import paths (`src.api`, `src.downloader`, `src.history_report`, `src.logger`, `src.github_repo_downloader`) kept as thin re-export shims. Existing external callers and tests continue to work.
+- Old flat import paths (`src.downloader`, `src.history_report`, `src.logger`, `src.github_repo_downloader`) kept as thin re-export shims. Existing external callers and tests continue to work.
 
 ## [Unreleased]
 
