@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none">
+    <defs>
+        <!-- Background Gradient -->
+        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0f172a" />
+            <stop offset="100%" stop-color="#020617" />
+        </linearGradient>
+
+        <!-- Brand Gradient 1: Cyan to Blue -->
+        <linearGradient id="cyanBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#22d3ee" />
+            <stop offset="100%" stop-color="#0284c7" />
+        </linearGradient>
+
+        <!-- Brand Gradient 2: Emerald to Teal -->
+        <linearGradient id="emeraldTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#34d399" />
+            <stop offset="100%" stop-color="#0f766e" />
+        </linearGradient>
+
+        <!-- Glow Filter -->
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+    </defs>
+
+    <!-- Outer Rounded Base -->
+    <rect width="128" height="128" rx="28" fill="url(#bgGrad)" stroke="#1e293b" stroke-width="2" />
+
+    <!-- Ambient Glow behind the logo -->
+    <circle cx="64" cy="64" r="32" fill="#0891b2" opacity="0.15" filter="url(#glow)" />
+
+    <!-- Folder/Repository Base Outline -->
+    <path d="M28 44C28 40.6863 30.6863 38 34 38H52.5C54.4109 38 56.208 38.9081 57.348 40.4497L61.652 46.264C62.222 47.0348 63.1205 47.4889 64.076 47.4889H94C97.3137 47.4889 100 50.1752 100 53.4889V86C100 89.3137 97.3137 92 94 92H34C30.6863 92 28 89.3137 28 86V44Z"
+          stroke="url(#cyanBlue)" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round" />
+
+    <!-- Inner Code Symbol (overlapping pythonic or terminal brace <) -->
+    <path d="M42 62L36 67L42 72" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M52 62L58 67L52 72" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- High-impact Download Arrow (representing batch download) -->
+    <g filter="url(#glow)">
+        <!-- Arrow Shaft -->
+        <path d="M78 40V68" stroke="url(#emeraldTeal)" stroke-width="6.5" stroke-linecap="round" />
+        <!-- Arrow Head -->
+        <path d="M68 60L78 70L88 60" stroke="url(#emeraldTeal)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+
+    <!-- Visual Accents (Representing multi-threading/concurrency connections) -->
+    <circle cx="82" cy="84" r="3" fill="#34d399" />
+    <circle cx="70" cy="84" r="3" fill="#22d3ee" />
+    <circle cx="94" cy="84" r="3" fill="#38bdf8" />
+</svg>
